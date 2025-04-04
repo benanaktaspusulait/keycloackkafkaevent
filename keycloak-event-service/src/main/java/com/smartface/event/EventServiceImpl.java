@@ -1,5 +1,6 @@
 package com.smartface.event;
 
+import com.smartface.event.mapper.EventMapper;
 import com.smartface.keycloak.grpc.EventFilter;
 import com.smartface.keycloak.grpc.EventRequest;
 import com.smartface.keycloak.grpc.EventResponse;
@@ -21,6 +22,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
+    private final EventMapper eventMapper;
     
     @Channel("keycloak-events")
     Emitter<String> eventEmitter;
@@ -31,7 +33,7 @@ public class EventServiceImpl implements EventService {
         
         return Uni.createFrom().item(() -> {
             try {
-                EventEntity event = getEventEntity(request);
+                EventEntity event = eventMapper.toEntity(request);
 
                 // Save event to database
                 eventRepository.persist(event);
@@ -62,20 +64,6 @@ public class EventServiceImpl implements EventService {
                     .build();
             }
         });
-    }
-
-    private static EventEntity getEventEntity(EventRequest request) {
-        EventEntity event = new EventEntity();
-        event.setId(request.getEventId());
-        event.setTime(Instant.ofEpochMilli(request.getTimestamp()));
-        event.setType(request.getEventType());
-        event.setRealmId(request.getRealmId());
-        event.setClientId(request.getClientId());
-        event.setUserId(request.getUserId());
-        event.setSessionId(request.getSessionId());
-        event.setIpAddress(request.getIpAddress());
-        event.setDetails(request.getDetailsMap());
-        return event;
     }
 
     @Override

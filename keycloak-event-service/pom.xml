@@ -19,6 +19,7 @@
         <surefire-plugin.version>3.1.2</surefire-plugin.version>
         <lombok.version>1.18.30</lombok.version>
         <jackson.version>2.15.3</jackson.version>
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
     </properties>
     
     <dependencyManagement>
@@ -117,6 +118,13 @@
             <version>2.3.0</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- MapStruct -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
     </dependencies>
     
     <build>
@@ -144,6 +152,11 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
