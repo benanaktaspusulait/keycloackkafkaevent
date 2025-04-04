@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-connect
+  namespace: keycloak-events
+spec:
+  selector:
+    app: kafka-connect
+  ports:
+  - name: connect
+    port: 8083
+    targetPort: connect
+  type: ClusterIP 

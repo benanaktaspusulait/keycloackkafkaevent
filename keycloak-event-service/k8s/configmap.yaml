@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-event-service-config
+  namespace: keycloak-events
+data:
+  application.properties: |
+    quarkus.datasource.jdbc.url=jdbc:postgresql://postgres:5432/keycloak_events
+    quarkus.datasource.username=postgres
+    quarkus.datasource.password=postgres
+    quarkus.hibernate-orm.database.generation=update
+    
+    mp.messaging.outgoing.events.connector=smallrye-kafka
+    mp.messaging.outgoing.events.topic=keycloak-events
+    mp.messaging.outgoing.events.bootstrap.servers=kafka:29092
+    
+    quarkus.grpc.server.port=9000
+    quarkus.grpc.server.ssl.certificate.files=/etc/grpc/tls/tls.crt
+    quarkus.grpc.server.ssl.certificate.key=/etc/grpc/tls/tls.key
+    
+    quarkus.log.level=INFO
+    quarkus.log.category."com.smartface.keycloak".level=DEBUG
+    
+    quarkus.health.enabled=true
+    quarkus.health.extensions.enabled=true 

@@ -1,0 +1,49 @@
+kafka:
+  bootstrap:
+    servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  security:
+    protocol: PLAINTEXT
+
+  producer:
+    key:
+      serializer: org.apache.kafka.common.serialization.StringSerializer
+    value:
+      serializer: org.apache.kafka.common.serialization.StringSerializer
+    acks: all
+    retries: 3
+    batch:
+      size: 16384
+    linger:
+      ms: 1
+    buffer:
+      memory: 33554432
+    enable:
+      idempotence: true
+
+quarkus:
+  # HTTP Configuration
+  http:
+    port: 8080
+    cors: true
+
+  # Health Check Configuration
+  health:
+    extensions:
+      enabled: true
+  smallrye-health:
+    ui:
+      enable: true
+
+  # Metrics Configuration
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+        path: /q/metrics
+
+  # Logging Configuration
+  log:
+    level: INFO
+    console:
+      format: "%d{yyyy-MM-dd HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n"
+      color: true

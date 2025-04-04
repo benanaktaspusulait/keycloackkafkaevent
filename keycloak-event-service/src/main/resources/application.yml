@@ -1,0 +1,85 @@
+quarkus:
+  # HTTP Configuration
+  http:
+    port: 8080
+    cors: true
+
+  # Database Configuration
+  datasource:
+    db-kind: postgresql
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    jdbc:
+      url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:keycloak_events}
+
+  # Hibernate Configuration
+  hibernate-orm:
+    database:
+      generation: update
+    log:
+      sql: true
+
+  # Kafka Configuration
+  kafka:
+    devservices:
+      enabled: true
+      port: 9092
+
+  # Messaging Configuration
+  smallrye-reactive-messaging:
+    outgoing:
+      events:
+        connector: smallrye-kafka
+        topic: keycloak-events
+        value:
+          serializer: io.quarkus.kafka.client.serialization.ObjectMapperSerializer
+        key:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+
+  # gRPC Configuration
+  grpc:
+    server:
+      port: 9000
+      ssl:
+        certificate:
+          files: server.pem
+        key:
+          files: server.key
+
+  # Jackson Configuration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    date-format: "yyyy-MM-dd HH:mm:ss"
+    time-zone: "UTC"
+
+  # Health Check Configuration
+  health:
+    extensions:
+      enabled: true
+  smallrye-health:
+    ui:
+      enable: true
+
+  # Metrics Configuration
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+        path: /q/metrics
+
+  # Logging Configuration
+  log:
+    level: INFO
+    category:
+      "com.smartface":
+        level: DEBUG
+    console:
+      format: "%d{yyyy-MM-dd HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n"
+      color: true
+
+# Kafka Bootstrap Configuration
+kafka:
+  bootstrap:
+    servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092} 

@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-event-service
+  namespace: keycloak-events
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: keycloak-event-service
+  template:
+    metadata:
+      labels:
+        app: keycloak-event-service
+    spec:
+      containers:
+      - name: keycloak-event-service
+        image: keycloak-event-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9000
+          name: grpc
+        env:
+        - name: JAVA_OPTIONS
+          value: "-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-event-service-secrets
+              key: POSTGRES_PASSWORD
+        - name: KAFKA_SASL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-event-service-secrets
+              key: KAFKA_SASL_USERNAME
+        - name: KAFKA_SASL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-event-service-secrets
+              key: KAFKA_SASL_PASSWORD
+        volumeMounts:
+        - name: config-volume
+          mountPath: /deployments/config/application.properties
+          subPath: application.properties
+        - name: grpc-tls
+          mountPath: /etc/grpc/tls
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /q/health/live
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config-volume
+        configMap:
+          name: keycloak-event-service-config
+      - name: grpc-tls
+        secret:
+          secretName: grpc-tls-secret 
