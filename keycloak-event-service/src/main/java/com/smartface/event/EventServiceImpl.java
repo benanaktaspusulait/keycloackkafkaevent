@@ -1,6 +1,5 @@
 package com.smartface.event;
 
-import com.smartface.event.mapper.EventMapper;
 import com.smartface.keycloak.grpc.EventFilter;
 import com.smartface.keycloak.grpc.EventRequest;
 import com.smartface.keycloak.grpc.EventResponse;
@@ -8,24 +7,43 @@ import com.smartface.keycloak.grpc.EventService;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.Instant;
+import java.util.Properties;
 
 @Slf4j
 @GrpcService
-@ApplicationScoped
+@Singleton
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
-    private final EventMapper eventMapper;
-    
-    @Channel("keycloak-events")
-    Emitter<String> eventEmitter;
+    private final KafkaProducer<String, String> producer;
+
+    @ConfigProperty(name = "kafka.bootstrap.servers")
+    String bootstrapServers;
+
+    public EventServiceImpl(EventRepository eventRepository) {
+        this.eventRepository = eventRepository;
+        
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(ProducerConfig.RETRIES_CONFIG, 3);
+        props.put(ProducerConfig.LINGER_MS_CONFIG, 10);
+        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+
+        this.producer = new KafkaProducer<>(props);
+    }
 
     @Override
     public Uni<EventResponse> sendEvent(EventRequest request) {
@@ -33,21 +51,22 @@ public class EventServiceImpl implements EventService {
         
         return Uni.createFrom().item(() -> {
             try {
-                EventEntity event = eventMapper.toEntity(request);
+                EventEntity event = toEntity(request);
 
                 // Save event to database
                 eventRepository.persist(event);
                 log.debug("Successfully saved event with id: {}", event.getId());
 
-                // Emit event to Kafka
-                eventEmitter.send(event.toString())
-                    .whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            log.error("Failed to emit event to Kafka", ex);
-                        } else {
-                            log.debug("Successfully emitted event to Kafka");
-                        }
-                    });
+                // Send event to Kafka
+                ProducerRecord<String, String> record = new ProducerRecord<>("keycloak_events", event.getId(), event.toString());
+                producer.send(record, (metadata, exception) -> {
+                    if (exception != null) {
+                        log.error("Failed to send event to Kafka", exception);
+                    } else {
+                        log.debug("Successfully sent event to Kafka: topic={}, partition={}, offset={}", 
+                            metadata.topic(), metadata.partition(), metadata.offset());
+                    }
+                });
 
                 // Build and return response
                 return EventResponse.newBuilder()
@@ -97,5 +116,26 @@ public class EventServiceImpl implements EventService {
                 emitter.fail(e);
             }
         });
+    }
+
+    public EventEntity toEntity(EventRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        EventEntity eventEntity = new EventEntity();
+
+        eventEntity.setId(request.getEventId());
+        eventEntity.setTime(Instant.ofEpochMilli(request.getTimestamp()));
+        eventEntity.setType(request.getEventType());
+        eventEntity.setRealmId(request.getRealmId());
+        eventEntity.setClientId(request.getClientId());
+        eventEntity.setUserId(request.getUserId());
+        eventEntity.setSessionId(request.getSessionId());
+        eventEntity.setIpAddress(request.getIpAddress());
+        eventEntity.setDetails(request.getDetailsMap());
+        eventEntity.setError(request.getError());
+
+        return eventEntity;
     }
 }

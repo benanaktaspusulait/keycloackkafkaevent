@@ -28,4 +28,4 @@ EXPOSE 8082
 USER 1001
 
 WORKDIR /deployments
-ENTRYPOINT ["java", "-jar", "quarkus-run.jar"]
+ENTRYPOINT ["java", "-jar", "quarkus-run.jar"] 

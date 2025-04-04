@@ -20,7 +20,8 @@ message EventRequest {
   string session_id = 6;
   string ip_address = 7;
   int64 timestamp = 8;
-  map<string, string> details = 9;
+  string error = 9;
+  map<string, string> details = 10;
 }
 
 message EventResponse {

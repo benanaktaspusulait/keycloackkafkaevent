@@ -11,7 +11,7 @@ data:
         "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
         "tasks.max": "1",
         "topics": "keycloak-events",
-        "connection.url": "jdbc:postgresql://postgres:5432/keycloak_events",
+        "connection.url": "jdbc:postgresql://postgres:5433/keycloak_events",
         "connection.user": "postgres",
         "connection.password": "postgres",
         "auto.create": "true",

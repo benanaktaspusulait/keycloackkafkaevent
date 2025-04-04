@@ -21,18 +21,40 @@ kafka:
       idempotence: true
 
 quarkus:
-  # HTTP Configuration
   http:
-    port: 8080
+    port: 8082
     cors: true
+  kafka:
+    devservices:
+      enabled: false
+  datasource:
+    db-kind: postgresql
+    username: postgres
+    password: postgres
+    jdbc:
+      url: jdbc:postgresql://localhost:5433/keycloak_events
+
+  hibernate-orm:
+    database:
+      generation: update
+    log:
+      sql: true
 
   # Health Check Configuration
   health:
+    enabled: true
     extensions:
       enabled: true
+    readiness:
+      enabled: true
+      path: /health/ready
+    liveness:
+      enabled: true
+      path: /health/live
   smallrye-health:
     ui:
       enable: true
+      path: /health-ui
 
   # Metrics Configuration
   micrometer:

@@ -1,30 +1,29 @@
-FROM registry.access.redhat.com/ubi8/openjdk-17:1.14
+FROM eclipse-temurin:21-jre
 
 ENV LANGUAGE='en_US:en'
 
 # Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
 ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_TOOL_OPTIONS="-Dnet.bytebuddy.experimental=true"
 
 # Install dependencies
-USER root
-RUN microdnf install curl ca-certificates \
-    && microdnf update \
-    && microdnf clean all
-
-# Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
-ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # We make four distinct layers so if there are application changes the library layers can be reused
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+RUN mkdir -p /deployments \
+    && chown 1001:0 /deployments \
+    && chmod -R "g+rwX" /deployments \
+    && chown 1001:0 /deployments
 
-EXPOSE 8080
-EXPOSE 9000
-USER 185
+COPY --chown=1001:0 target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=1001:0 target/quarkus-app/*.jar /deployments/
+COPY --chown=1001:0 target/quarkus-app/app/ /deployments/app/
+COPY --chown=1001:0 target/quarkus-app/quarkus/ /deployments/quarkus/
 
-ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
-ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+EXPOSE 8082
+USER 1001
 
-ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ] 
+WORKDIR /deployments
+ENTRYPOINT ["java", "-jar", "quarkus-run.jar"]
