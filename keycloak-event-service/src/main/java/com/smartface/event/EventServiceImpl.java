@@ -8,7 +8,9 @@ import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
+import jakarta.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -22,17 +24,17 @@ import java.util.Properties;
 @Slf4j
 @GrpcService
 @Singleton
-@RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
-    private final EventRepository eventRepository;
-    private final KafkaProducer<String, String> producer;
+    @Inject
+    EventRepository eventRepository;
+
+    private KafkaProducer<String, String> producer;
 
     @ConfigProperty(name = "kafka.bootstrap.servers")
     String bootstrapServers;
 
-    public EventServiceImpl(EventRepository eventRepository) {
-        this.eventRepository = eventRepository;
-        
+    @PostConstruct
+    void initialize() {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
@@ -43,6 +45,15 @@ public class EventServiceImpl implements EventService {
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
 
         this.producer = new KafkaProducer<>(props);
+        log.info("Kafka producer initialized with bootstrap servers: {}", bootstrapServers);
+    }
+
+    @PreDestroy
+    void cleanup() {
+        if (producer != null) {
+            producer.close();
+            log.info("Kafka producer closed");
+        }
     }
 
     @Override

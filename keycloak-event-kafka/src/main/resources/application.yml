@@ -32,7 +32,7 @@ quarkus:
     username: postgres
     password: postgres
     jdbc:
-      url: jdbc:postgresql://localhost:5433/keycloak_events
+      url: jdbc:postgresql://localhost:5432/keycloak_events
 
   hibernate-orm:
     database:
