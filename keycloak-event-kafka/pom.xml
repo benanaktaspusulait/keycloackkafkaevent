@@ -14,8 +14,8 @@
     <properties>
         <compiler-plugin.version>3.11.0</compiler-plugin.version>
         <maven.compiler.parameters>true</maven.compiler.parameters>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.version>3.5.1</quarkus.platform.version>
@@ -24,6 +24,7 @@
         <jackson.version>2.15.3</jackson.version>
         <keycloak.version>22.0.0</keycloak.version>
         <kafka.version>3.6.0</kafka.version>
+        <net.bytebuddy.experimental>true</net.bytebuddy.experimental>
     </properties>
 
     <dependencyManagement>

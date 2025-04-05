@@ -1,0 +1,24 @@
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
+
+# Set the working directory
+WORKDIR /build
+
+# Copy the event listener source code
+COPY keycloak-event-kafka/pom.xml keycloak-event-kafka/pom.xml
+COPY keycloak-event-kafka/src keycloak-event-kafka/src
+
+# Build the event listener
+WORKDIR /build/keycloak-event-kafka
+ENV JAVA_TOOL_OPTIONS="-Dnet.bytebuddy.experimental=true"
+RUN mvn clean package
+
+FROM quay.io/keycloak/keycloak:22.0.0
+
+# Set Byte Buddy experimental flag
+ENV JAVA_TOOL_OPTIONS="-Dnet.bytebuddy.experimental=true"
+
+# Copy the event listener JAR from the builder stage
+COPY --from=builder /build/keycloak-event-kafka/target/keycloak-event-kafka-1.0.0-SNAPSHOT.jar /opt/keycloak/providers/
+
+# Set the command to start Keycloak in development mode
+CMD ["start-dev"] 

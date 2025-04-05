@@ -19,8 +19,8 @@ public class KafkaEventListenerProviderFactory implements EventListenerProviderF
 
     @Override
     public void init(Config.Scope config) {
-        bootstrapServers = config.get("bootstrapServers", "localhost:9092");
-        topic = config.get("topic", "keycloak-events");
+        bootstrapServers = config.get("bootstrapServers", System.getenv("KC_EVENTS_KAFKA_BOOTSTRAP_SERVERS"));
+        topic = config.get("topic", "keycloak_events");
         log.info("Initialized Kafka event listener provider with bootstrap servers: {} and topic: {}", bootstrapServers, topic);
     }
 

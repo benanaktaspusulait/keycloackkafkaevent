@@ -1,9 +1,10 @@
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:17-jre
 
 ENV LANGUAGE='en_US:en'
 
 # Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
 ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_TOOL_OPTIONS="-Dnet.bytebuddy.experimental=true"
 
 # Install dependencies
 USER root

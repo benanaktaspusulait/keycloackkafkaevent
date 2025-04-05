@@ -14,6 +14,7 @@ import java.util.Map;
 @Table(name = "keycloak_events")
 public class EventEntity {
     @Id
+    @Column(name = "id")
     private String id;
 
     @Column(name = "event_time")
