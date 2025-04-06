@@ -17,7 +17,7 @@ public class EventEntity {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "event_time")
+    @Column(name = "event_time", nullable = false)
     private Instant time;
 
     @Column(name = "event_type")
@@ -41,9 +41,6 @@ public class EventEntity {
     @Column(name = "error")
     private String error;
 
-    @ElementCollection
-    @CollectionTable(name = "event_details", joinColumns = @JoinColumn(name = "event_id"))
-    @MapKeyColumn(name = "detail_key")
-    @Column(name = "detail_value")
-    private Map<String, String> details;
+    @Column(name = "details", columnDefinition = "jsonb")
+    private String details;
 } 

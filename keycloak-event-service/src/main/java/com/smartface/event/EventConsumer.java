@@ -32,7 +32,14 @@ public class EventConsumer {
             
             EventEntity event = new EventEntity();
             event.setId(eventNode.get("id").asText());
-            event.setTime(Instant.ofEpochMilli(eventNode.get("time").asLong()));
+            
+            // Ensure time is set properly
+            if (eventNode.has("time")) {
+                event.setTime(Instant.ofEpochMilli(eventNode.get("time").asLong()));
+            } else {
+                event.setTime(Instant.now());
+            }
+            
             event.setType(eventNode.get("type").asText());
             event.setRealmId(eventNode.get("realmId").asText());
             
@@ -52,16 +59,9 @@ public class EventConsumer {
                 event.setError(eventNode.get("error").asText());
             }
             
-            // Handle details map
+            // Handle details as JSON
             if (eventNode.has("details")) {
-                Map<String, String> details = new HashMap<>();
-                JsonNode detailsNode = eventNode.get("details");
-                Iterator<Map.Entry<String, JsonNode>> fields = detailsNode.fields();
-                while (fields.hasNext()) {
-                    Map.Entry<String, JsonNode> field = fields.next();
-                    details.put(field.getKey(), field.getValue().asText());
-                }
-                event.setDetails(details);
+                event.setDetails(eventNode.get("details").toString());
             }
 
             eventRepository.persist(event);

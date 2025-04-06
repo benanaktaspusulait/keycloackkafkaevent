@@ -1,6 +1,6 @@
 # Keycloak Event Service
 
-This project implements a system to capture and process Keycloak events using Kafka and store them in a PostgreSQL database. The system consists of two main components:
+This project implements a system to capture and process Keycloak events using a database-first approach with Kafka as a secondary channel. The system ensures event persistence even when Kafka is unavailable.
 
 ## Project Structure
 
@@ -19,8 +19,10 @@ This project implements a system to capture and process Keycloak events using Ka
 ## Components
 
 ### 1. Keycloak Kafka Event Listener
-- Implements a Keycloak event listener that captures authentication and user events
-- Publishes events to a Kafka topic
+- Implements a Keycloak event listener that:
+  - First stores events in PostgreSQL database
+  - Then publishes events to a Kafka topic
+  - Ensures event persistence even if Kafka is unavailable
 - Located in `keycloak-kafka-event-listener/`
 
 ### 2. Event Service
@@ -37,25 +39,73 @@ This project implements a system to capture and process Keycloak events using Ka
   - Keycloak (Identity and Access Management)
   - Event Service (Event processing)
 
-## Configuration
+## Event Processing Flow
 
-The system is configured through:
-- `application.properties` in the event service
-- `docker-compose.yml` for container configuration
-- `create_tables.sql` for database schema
+1. **Event Generation**:
+   - Keycloak generates events (login, logout, etc.)
+   - Event listener captures these events
+
+2. **Database Storage**:
+   - Events are immediately stored in PostgreSQL
+   - Ensures data persistence regardless of Kafka status
+
+3. **Kafka Publishing**:
+   - After successful database storage, events are published to Kafka
+   - Event service consumes from Kafka for additional processing
+
+4. **Event Service Processing**:
+   - Consumes events from Kafka
+   - Provides gRPC endpoints for event retrieval
+   - Implements additional business logic if needed
 
 ## Getting Started
 
-### Development Environment (Docker Compose)
-1. Build and start the services:
+### Prerequisites
+- Docker and Docker Compose
+- Java 17 or later
+- Maven
+
+### Development Environment Setup
+
+1. Build the event listener:
+```bash
+cd keycloak-kafka-event-listener
+mvn clean package
+```
+
+2. Start all services:
 ```bash
 docker-compose up --build
 ```
 
-2. The system will automatically:
-- Initialize the PostgreSQL database with required tables
-- Start Keycloak with the event listener
-- Start the event service to consume and process events
+3. Access services:
+- Keycloak: http://localhost:8080
+- Event Service: http://localhost:8082
+- PostgreSQL: localhost:5432
+- Redpanda (Kafka): localhost:9092
+
+### Testing the System
+
+1. **Verify Database Setup**:
+```bash
+docker exec -it smartface-postgres-1 psql -U postgres -d keycloak_events -c "\dt"
+```
+
+2. **Check Event Listener Logs**:
+```bash
+docker logs -f smartface-keycloak-1
+```
+
+3. **Monitor Event Service**:
+```bash
+docker logs -f smartface-event-service-1
+```
+
+4. **Test Event Generation**:
+- Log in to Keycloak admin console (http://localhost:8080)
+- Create a test user
+- Perform login/logout actions
+- Verify events in database and Kafka
 
 ### Production Deployment (Kubernetes)
 The project includes Kubernetes configurations in `keycloak-event-service/k8s/`:
@@ -78,38 +128,46 @@ kubectl apply -f k8s/service.yaml
 kubectl apply -f k8s/ingress.yaml
 ```
 
-The Kubernetes deployment includes:
-- Horizontal scaling (2 replicas)
-- Resource limits and requests
-- Health checks (liveness and readiness probes)
-- TLS configuration for gRPC
-- Secure secret management
-
-## Database Schema
-
-The `create_tables.sql` file defines the database schema:
-- `keycloak_events` table for storing events
-- Indexes for optimized query performance
-- JSONB field for flexible event details storage
-
 ## Troubleshooting
 
-If you encounter issues:
-1. Check service logs:
+### Common Issues
+
+1. **Database Connection Issues**:
 ```bash
-docker-compose logs -f [service-name]
+docker exec -it smartface-postgres-1 psql -U postgres -d keycloak_events -c "SELECT COUNT(*) FROM keycloak_events;"
 ```
 
-2. Verify database tables:
+2. **Kafka Connection Issues**:
 ```bash
-docker exec -it smartface-postgres-1 psql -U postgres -d keycloak_events -c "\dt"
+docker exec -it smartface-redpanda-1 rpk topic list
 ```
 
-3. Common issues:
-- Ensure all services are running and healthy
-- Check database connection settings
-- Verify Kafka topic configuration
-- Monitor event service logs for processing errors
+3. **Event Listener Issues**:
+```bash
+docker logs -f smartface-keycloak-1 | grep "KafkaEventListenerProvider"
+```
+
+4. **Event Service Issues**:
+```bash
+docker logs -f smartface-event-service-1
+```
+
+### Health Checks
+
+1. **Keycloak Health**:
+```bash
+curl http://localhost:8080/health/ready
+```
+
+2. **Event Service Health**:
+```bash
+curl http://localhost:8082/q/health/ready
+```
+
+3. **Database Health**:
+```bash
+docker exec -it smartface-postgres-1 pg_isready -U postgres
+```
 
 ## Development
 
