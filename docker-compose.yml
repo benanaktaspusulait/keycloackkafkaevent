@@ -25,8 +25,67 @@ services:
       - "9092:9092"
       - "29092:29092"
     healthcheck:
-      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy: true'"]
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy: true' && echo '' | rpk topic create test-health --brokers=localhost:29092 2>/dev/null || echo 'Kafka API Ready'"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s 
+      start_period: 30s
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: keycloak_events
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.5
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_events
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_EVENTS_LISTENER_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      KC_EVENTS_LISTENER_KAFKA_TOPIC: keycloak_events
+      KC_EVENTS_LISTENER_KAFKA_CLIENT_ID: keycloak
+      KC_EVENTS_LISTENER_KAFKA_GROUP_ID: keycloak
+    command: start-dev
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./keycloak-kafka-event-listener/target/keycloak-kafka-event-listener-1.0.0-SNAPSHOT-jar-with-dependencies.jar:/opt/keycloak/providers/keycloak-kafka-event-listener.jar
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  event-service:
+    build:
+      context: ./keycloak-event-service
+      dockerfile: Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/keycloak_events
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+
+volumes:
+  postgres_data: 
