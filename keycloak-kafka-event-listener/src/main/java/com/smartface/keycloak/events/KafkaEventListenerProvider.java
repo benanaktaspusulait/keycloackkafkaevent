@@ -1,5 +1,6 @@
 package com.smartface.keycloak.events;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -13,11 +14,16 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Properties;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class KafkaEventListenerProvider implements EventListenerProvider {
+
+    private static final Logger LOGGER = Logger.getLogger(KafkaEventListenerProvider.class.getName());
+
     private final String bootstrapServers;
     private final String topic;
     private final String clientId;
@@ -32,13 +38,11 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
         this.topic = topic;
         this.clientId = clientId;
         this.objectMapper = new ObjectMapper();
-        
-        // Database configuration
+
         this.dbUrl = System.getenv("KC_EVENTS_LISTENER_DB_URL");
         this.dbUser = System.getenv("KC_EVENTS_LISTENER_DB_USER");
         this.dbPassword = System.getenv("KC_EVENTS_LISTENER_DB_PASSWORD");
-        
-        // Create the Kafka producer
+
         this.producer = createProducer();
     }
 
@@ -47,14 +51,11 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     }
 
     private void storeEventInDatabase(Event event) throws SQLException {
-        String sql = "INSERT INTO keycloak_events (id, time, type, realm_id, client_id, user_id, session_id, ip_address, error, details) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+        final String sql = "INSERT INTO keycloak_events (id, time, type, realm_id, client_id, user_id, session_id, ip_address, error, details) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)";
+
+        try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, event.getId());
-            // Always use current time if event time is not set or is 0
             long eventTime = event.getTime() <= 0 ? System.currentTimeMillis() : event.getTime();
             pstmt.setTimestamp(2, new java.sql.Timestamp(eventTime));
             pstmt.setString(3, event.getType().name());
@@ -64,54 +65,28 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
             pstmt.setString(7, event.getSessionId());
             pstmt.setString(8, event.getIpAddress());
             pstmt.setString(9, event.getError());
-            
-            // Convert details to JSON string
-            String detailsJson = "{}";
-            if (event.getDetails() != null && !event.getDetails().isEmpty()) {
-                try {
-                    detailsJson = objectMapper.writeValueAsString(event.getDetails());
-                } catch (Exception e) {
-                    System.err.println("Failed to serialize event details: " + e.getMessage());
-                }
-            }
-            pstmt.setString(10, detailsJson);
-            
+            pstmt.setString(10, convertMapToJson(event.getDetails()));
             pstmt.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("Failed to store event in database: " + e.getMessage());
-            throw e;
         }
     }
 
     private void storeAdminEventInDatabase(AdminEvent event) throws SQLException {
-        String sql = "INSERT INTO keycloak_events (id, time, type, realm_id, client_id, user_id, details) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+        final String sql = "INSERT INTO keycloak_events (id, time, type, realm_id, client_id, user_id, details) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)";
+
+        try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, event.getId());
             pstmt.setTimestamp(2, new java.sql.Timestamp(event.getTime()));
             pstmt.setString(3, "ADMIN_" + event.getOperationType().name());
             pstmt.setString(4, event.getRealmId());
             pstmt.setString(5, event.getResourceType().name());
             pstmt.setString(6, event.getAuthDetails().getUserId());
-            
+
             Map<String, String> details = new HashMap<>();
             details.put("resourcePath", event.getResourcePath());
             details.put("representation", event.getRepresentation());
-            String detailsJson = "{}";
-            try {
-                detailsJson = objectMapper.writeValueAsString(details);
-            } catch (Exception e) {
-                System.err.println("Failed to serialize admin event details: " + e.getMessage());
-            }
-            pstmt.setString(7, detailsJson);
-            
+            pstmt.setString(7, convertMapToJson(details));
             pstmt.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("Failed to store admin event in database: " + e.getMessage());
-            throw e;
         }
     }
 
@@ -125,47 +100,47 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
         props.put(ProducerConfig.RETRIES_CONFIG, 3);
         props.put(ProducerConfig.LINGER_MS_CONFIG, 10);
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
-
         return new KafkaProducer<>(props);
+    }
+
+    private String convertMapToJson(Map<String, String> map) {
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            LOGGER.log(Level.WARNING, "Failed to serialize map to JSON", e);
+            return "{}";
+        }
     }
 
     @Override
     public void onEvent(Event event) {
         try {
-            // First store in database
             storeEventInDatabase(event);
-            
-            // Then publish to Kafka
             String eventJson = objectMapper.writeValueAsString(event);
             ProducerRecord<String, String> record = new ProducerRecord<>(topic, event.getId(), eventJson);
             producer.send(record, (metadata, exception) -> {
                 if (exception != null) {
-                    System.err.println("Failed to send event to Kafka: " + exception.getMessage());
+                    LOGGER.log(Level.WARNING, "Failed to send event to Kafka", exception);
                 }
             });
         } catch (Exception e) {
-            System.err.println("Error processing event: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error processing user event", e);
         }
     }
 
     @Override
     public void onEvent(AdminEvent adminEvent, boolean includeRepresentation) {
         try {
-            // First store in database
             storeAdminEventInDatabase(adminEvent);
-            
-            // Then publish to Kafka
             String eventJson = objectMapper.writeValueAsString(adminEvent);
             ProducerRecord<String, String> record = new ProducerRecord<>(topic, adminEvent.getId(), eventJson);
             producer.send(record, (metadata, exception) -> {
                 if (exception != null) {
-                    System.err.println("Failed to send admin event to Kafka: " + exception.getMessage());
+                    LOGGER.log(Level.WARNING, "Failed to send admin event to Kafka", exception);
                 }
             });
         } catch (Exception e) {
-            System.err.println("Error processing admin event: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error processing admin event", e);
         }
     }
 
@@ -176,8 +151,8 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
                 producer.flush();
                 producer.close();
             } catch (Exception e) {
-                System.err.println("Error closing Kafka producer: " + e.getMessage());
+                LOGGER.log(Level.WARNING, "Error closing Kafka producer", e);
             }
         }
     }
-} 
+}
