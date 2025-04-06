@@ -1,11 +1,14 @@
 package com.smartface.event;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+
 import java.time.Instant;
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -17,10 +20,10 @@ public class EventEntity {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "event_time", nullable = false)
-    private Instant time;
+    @Column(name = "time", nullable = false)
+    private Instant time = Instant.now();
 
-    @Column(name = "event_type")
+    @Column(name = "type")
     private String type;
 
     @Column(name = "realm_id")

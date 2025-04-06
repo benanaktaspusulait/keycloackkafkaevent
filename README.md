@@ -1,177 +1,148 @@
-# Keycloak Event Service
+# SmartFace Keycloak Event System
 
-This project implements a system to capture and process Keycloak events using a database-first approach with Kafka as a secondary channel. The system ensures event persistence even when Kafka is unavailable.
+This project implements a robust event handling system for Keycloak using the Outbox Pattern. It ensures reliable event delivery from Keycloak to Kafka while maintaining data consistency.
 
-## Project Structure
+## Architecture
 
-```
-.
-├── keycloak-kafka-event-listener/    # Keycloak event listener implementation
-├── keycloak-event-service/           # Event service that consumes and processes events
-│   ├── k8s/                         # Kubernetes deployment configurations
-│   ├── src/                         # Source code
-│   └── pom.xml                      # Maven configuration
-├── docker-compose.yml                # Docker configuration for all services
-├── create_tables.sql                 # Database schema
-└── testcase-1.pdf                    # Project documentation
-```
+The system consists of the following components:
 
-## Components
+1. **Keycloak Event Listener**
+   - Captures events from Keycloak
+   - Stores events in PostgreSQL
+   - Uses the Outbox Pattern for reliable Kafka publishing
 
-### 1. Keycloak Kafka Event Listener
-- Implements a Keycloak event listener that:
-  - First stores events in PostgreSQL database
-  - Then publishes events to a Kafka topic
-  - Ensures event persistence even if Kafka is unavailable
-- Located in `keycloak-kafka-event-listener/`
+2. **Outbox Poller**
+   - Runs as part of the Keycloak event listener
+   - Polls the outbox table for pending events
+   - Publishes events to Kafka
+   - Handles retries and error tracking
 
-### 2. Event Service
-- Consumes events from Kafka using SmallRye Reactive Messaging
-- Processes and stores events in PostgreSQL
-- Implements gRPC endpoints for event retrieval
-- Located in `keycloak-event-service/`
-
-### 3. Infrastructure
-- Uses Docker Compose for container orchestration
-- Includes services:
-  - Redpanda (Kafka-compatible message broker)
-  - PostgreSQL (Database)
-  - Keycloak (Identity and Access Management)
-  - Event Service (Event processing)
-
-## Event Processing Flow
-
-1. **Event Generation**:
-   - Keycloak generates events (login, logout, etc.)
-   - Event listener captures these events
-
-2. **Database Storage**:
-   - Events are immediately stored in PostgreSQL
-   - Ensures data persistence regardless of Kafka status
-
-3. **Kafka Publishing**:
-   - After successful database storage, events are published to Kafka
-   - Event service consumes from Kafka for additional processing
-
-4. **Event Service Processing**:
+3. **Event Service**
    - Consumes events from Kafka
-   - Provides gRPC endpoints for event retrieval
-   - Implements additional business logic if needed
+   - Provides gRPC interface for event queries
+   - Implements event filtering and streaming
 
-## Getting Started
+## Database Schema
 
-### Prerequisites
-- Docker and Docker Compose
-- Java 17 or later
-- Maven
+### keycloak_events
+- Stores all Keycloak events
+- Primary table for event data
+- Includes timestamps, event types, and related metadata
 
-### Development Environment Setup
+### event_outbox
+- Implements the Outbox Pattern
+- Tracks event publishing status
+- Handles retries and error tracking
+- Ensures exactly-once delivery
 
-1. Build the event listener:
-```bash
-cd keycloak-kafka-event-listener
-mvn clean package
-```
+### event_details
+- Stores additional event details
+- Supports flexible event data storage
 
-2. Start all services:
-```bash
-docker-compose up --build
-```
+## Setup and Running
 
-3. Access services:
-- Keycloak: http://localhost:8080
-- Event Service: http://localhost:8082
-- PostgreSQL: localhost:5432
-- Redpanda (Kafka): localhost:9092
+1. **Prerequisites**
+   - Docker and Docker Compose
+   - Java 17 or later
+   - Maven
 
-### Testing the System
+2. **Environment Variables**
+   ```bash
+   KC_EVENTS_LISTENER_KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
+   KC_EVENTS_LISTENER_KAFKA_TOPIC=keycloak_events
+   KC_EVENTS_LISTENER_KAFKA_CLIENT_ID=keycloak-event-listener
+   KC_EVENTS_LISTENER_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+   KC_EVENTS_LISTENER_DB_USER=keycloak
+   KC_EVENTS_LISTENER_DB_PASSWORD=password
+   ```
 
-1. **Verify Database Setup**:
-```bash
-docker exec -it smartface-postgres-1 psql -U postgres -d keycloak_events -c "\dt"
-```
+3. **Building and Running**
+   ```bash
+   # Build the event listener
+   cd keycloak-kafka-event-listener
+   mvn clean package
 
-2. **Check Event Listener Logs**:
-```bash
-docker logs -f smartface-keycloak-1
-```
+   # Start all services
+   docker compose up -d --build
+   ```
 
-3. **Monitor Event Service**:
-```bash
-docker logs -f smartface-event-service-1
-```
+4. **Verifying the Setup**
+   - Check Keycloak logs: `docker logs smartface-keycloak-1`
+   - Check event service logs: `docker logs smartface-event-service-1`
+   - Monitor Kafka topics: `docker exec -it smartface-redpanda-1 rpk topic list`
 
-4. **Test Event Generation**:
-- Log in to Keycloak admin console (http://localhost:8080)
-- Create a test user
-- Perform login/logout actions
-- Verify events in database and Kafka
+## Event Flow
 
-### Production Deployment (Kubernetes)
-The project includes Kubernetes configurations in `keycloak-event-service/k8s/`:
+1. Keycloak generates an event
+2. Event listener:
+   - Stores event in `keycloak_events` table
+   - Creates entry in `event_outbox` table
+3. Outbox poller:
+   - Reads pending events from outbox
+   - Publishes to Kafka
+   - Updates event status
+4. Event service:
+   - Consumes events from Kafka
+   - Provides gRPC interface for queries
 
-1. Create namespace:
-```bash
-kubectl apply -f k8s/namespace.yaml
-```
+## Error Handling
 
-2. Create secrets:
-```bash
-kubectl apply -f k8s/secrets.yaml
-kubectl apply -f k8s/secret.yaml
-```
+- Failed events are retried up to 3 times
+- Error details are stored in the outbox table
+- System maintains consistency through transactions
+- Failed events can be manually reviewed and retried
 
-3. Deploy the service:
-```bash
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/ingress.yaml
-```
+## Monitoring
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Issues**:
-```bash
-docker exec -it smartface-postgres-1 psql -U postgres -d keycloak_events -c "SELECT COUNT(*) FROM keycloak_events;"
-```
-
-2. **Kafka Connection Issues**:
-```bash
-docker exec -it smartface-redpanda-1 rpk topic list
-```
-
-3. **Event Listener Issues**:
-```bash
-docker logs -f smartface-keycloak-1 | grep "KafkaEventListenerProvider"
-```
-
-4. **Event Service Issues**:
-```bash
-docker logs -f smartface-event-service-1
-```
-
-### Health Checks
-
-1. **Keycloak Health**:
-```bash
-curl http://localhost:8080/health/ready
-```
-
-2. **Event Service Health**:
-```bash
-curl http://localhost:8082/q/health/ready
-```
-
-3. **Database Health**:
-```bash
-docker exec -it smartface-postgres-1 pg_isready -U postgres
-```
+- Check event status in `event_outbox` table
+- Monitor Kafka consumer lag
+- Review error logs in Keycloak and event service
+- Track event processing metrics
 
 ## Development
 
-- The project uses Java with Quarkus framework
-- Kafka integration is handled by SmallRye Reactive Messaging
-- Database operations use JPA/Hibernate
-- Event processing is implemented using reactive streams 
+1. **Building the Event Listener**
+   ```bash
+   cd keycloak-kafka-event-listener
+   mvn clean package
+   ```
+
+2. **Building the Event Service**
+   ```bash
+   cd keycloak-event-service
+   mvn clean package
+   ```
+
+3. **Testing**
+   - Unit tests: `mvn test`
+   - Integration tests: `mvn verify`
+   - Manual testing: Use Keycloak admin console to trigger events
+
+## Troubleshooting
+
+1. **Events not appearing in Kafka**
+   - Check Keycloak logs for event listener errors
+   - Verify outbox table for pending events
+   - Check Kafka connectivity
+
+2. **Database Connection Issues**
+   - Verify PostgreSQL is running
+   - Check connection string and credentials
+   - Review database logs
+
+3. **Kafka Publishing Failures**
+   - Check Redpanda status
+   - Verify topic exists
+   - Review outbox table for failed events
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 

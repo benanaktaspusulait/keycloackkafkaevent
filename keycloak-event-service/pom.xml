@@ -22,6 +22,7 @@
         <jackson.version>2.15.3</jackson.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <net.bytebuddy.experimental>true</net.bytebuddy.experimental>
+        <byte-buddy.version>1.14.11</byte-buddy.version>
     </properties>
 
 
@@ -111,12 +112,12 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.14.13</version>
+            <version>${byte-buddy.version}</version>
         </dependency>
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
-            <version>1.14.13</version>
+            <version>${byte-buddy.version}</version>
         </dependency>
 
         <!-- Testing -->
@@ -142,6 +143,12 @@
             <version>2.3.0</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Scheduler -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -159,6 +166,11 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <systemProperties>
+                        <net.bytebuddy.experimental>true</net.bytebuddy.experimental>
+                    </systemProperties>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -182,8 +194,9 @@
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
+                <version>3.1.2</version>
                 <configuration>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>

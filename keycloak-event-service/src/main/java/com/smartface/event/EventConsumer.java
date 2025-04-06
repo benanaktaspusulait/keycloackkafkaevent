@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import io.quarkus.logging.Log;
 
 import java.time.Instant;
 
@@ -20,11 +21,11 @@ public class EventConsumer {
         this.objectMapper = objectMapper;
     }
 
-    @Incoming("keycloak_events")
+    @Incoming("keycloak-events-in")
     @Transactional
     public void consume(String eventJson) {
         try {
-            log.info("Received event: {}", eventJson);
+            Log.info("Received event: " + eventJson);
             JsonNode eventNode = objectMapper.readTree(eventJson);
             
             EventEntity event = new EventEntity();
