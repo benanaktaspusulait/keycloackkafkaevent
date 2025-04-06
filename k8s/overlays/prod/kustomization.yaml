@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: smartface
+
+bases:
+  - ../../base
+
+patchesStrategicMerge:
+  - event-service-patch.yaml
+  - keycloak-patch.yaml
+  - postgres-patch.yaml
+  - redpanda-patch.yaml
+
+configMapGenerator:
+  - name: smartface-config
+    behavior: merge
+    literals:
+      - KC_EVENTS_LISTENER_KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
+      - KC_EVENTS_LISTENER_KAFKA_TOPIC=keycloak_events_prod
+      - KC_EVENTS_LISTENER_KAFKA_CLIENT_ID=keycloak-event-listener-prod 

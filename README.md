@@ -1,54 +1,128 @@
-# SmartFace Keycloak Event System
+# Smartface Keycloak Event Service
 
-This project implements a robust event handling system for Keycloak using the Outbox Pattern. It ensures reliable event delivery from Keycloak to Kafka while maintaining data consistency.
+This service is designed to capture and process events from Keycloak, storing them in a PostgreSQL database and publishing them to a Kafka topic.
 
-## System Architecture
-
-```mermaid
-graph TD
-    A[Keycloak] -->|Events| B[Event Listener]
-    B -->|Store| C[PostgreSQL]
-    B -->|Outbox| D[Event Outbox]
-    D -->|Poll| E[Outbox Poller]
-    E -->|Publish| F[Redpanda]
-    F -->|Consume| G[Event Service]
-    G -->|gRPC| H[Client Applications]
-    
-    subgraph "Database"
-        C
-        D
-    end
-    
-    subgraph "Event Processing"
-        E
-        F
-        G
-    end
-```
+## Architecture
 
 The system consists of the following components:
 
-1. **Keycloak Event Listener**
-   - Captures events from Keycloak using a custom SPI (Service Provider Interface)
-   - Implements the `EventListenerProvider` interface to receive Keycloak events
-   - Uses a transactional approach to ensure data consistency
-   - Handles various event types (LOGIN, LOGOUT, REGISTER, etc.)
+1. **Keycloak**: Identity and Access Management server
+   - Single instance running in development mode
+   - Configured with PostgreSQL database
+   - Kafka event listener enabled
+   - HTTP access enabled with relaxed hostname validation
 
-2. **Outbox Pattern Implementation**
-   - **Event Storage**: Events are first stored in the `keycloak_events` table
-   - **Outbox Table**: The `event_outbox` table tracks events pending Kafka publication
-   - **Publishing Process**:
-     - Events are written to both tables in a single transaction
-     - Outbox poller periodically checks for unpublished events
-     - Events are published to Kafka and marked as published
-     - Failed events are retried with exponential backoff
-   - **Exactly-Once Delivery**: Ensures each event is published exactly once to Kafka
+2. **Event Service**: Spring Boot application that:
+   - Consumes events from Kafka
+   - Stores events in PostgreSQL
+   - Provides REST API for event queries
 
-3. **Event Service**
-   - Consumes events from Kafka using a reactive consumer
-   - Provides gRPC interface for event queries and streaming
-   - Implements event filtering and pagination
-   - Maintains event history and metadata
+3. **PostgreSQL**: Database for storing:
+   - Keycloak events
+   - Event outbox records
+
+4. **Redpanda**: Kafka-compatible message broker for event streaming
+
+## Configuration
+
+### Keycloak Configuration
+
+Keycloak is configured with the following settings:
+- Development mode with HTTP enabled
+- PostgreSQL database connection
+- Kafka event listener for publishing events
+- Single instance deployment for simplicity
+
+### Event Service Configuration
+
+The event service is configured with:
+- Kafka consumer for `keycloak_events` topic
+- PostgreSQL connection for event storage
+- REST API endpoints for event queries
+
+## Database Schema
+
+The service uses two main tables:
+
+1. `keycloak_events`: Stores events from Keycloak
+2. `event_outbox`: Manages event publishing to Kafka
+
+## Deployment
+
+The system is deployed using Kubernetes with the following components:
+
+1. **Keycloak Deployment**:
+   - Single replica
+   - Recreate strategy for updates
+   - Resource limits: 2Gi memory, 1 CPU
+   - Health checks configured
+
+2. **Event Service Deployment**:
+   - Multiple replicas for scalability
+   - Resource limits configured
+   - Health checks enabled
+
+3. **PostgreSQL StatefulSet**:
+   - Single instance
+   - Persistent volume for data storage
+
+4. **Redpanda StatefulSet**:
+   - Single instance
+   - Persistent volume for message storage
+
+## Environment Variables
+
+Key configuration is managed through environment variables:
+
+### Keycloak
+- `KEYCLOAK_ADMIN`: Admin username
+- `KEYCLOAK_ADMIN_PASSWORD`: Admin password
+- `KC_DB`: Database type (postgres)
+- `KC_DB_URL`: Database connection URL
+- `KC_DB_USERNAME`: Database username
+- `KC_DB_PASSWORD`: Database password
+- `KC_EVENTS_LISTENER`: Event listener type (kafka)
+- `KC_EVENTS_LISTENER_KAFKA_*`: Kafka configuration
+
+### Event Service
+- `SPRING_DATASOURCE_URL`: Database connection URL
+- `SPRING_DATASOURCE_USERNAME`: Database username
+- `SPRING_DATASOURCE_PASSWORD`: Database password
+- `SPRING_KAFKA_BOOTSTRAP_SERVERS`: Kafka broker address
+- `SPRING_KAFKA_CONSUMER_GROUP_ID`: Consumer group ID
+
+## Monitoring
+
+Health endpoints are available for both services:
+
+- Keycloak: `/health/ready` and `/health/live`
+- Event Service: `/actuator/health`
+
+## Development Notes
+
+- Keycloak runs in development mode for easier testing
+- Event service uses Spring Boot with Kafka integration
+- Database schema is managed through SQL scripts
+- Kubernetes configurations are in the `k8s` directory
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **Keycloak Connection Issues**:
+   - Verify PostgreSQL is running
+   - Check database credentials
+   - Ensure network connectivity
+
+2. **Event Service Issues**:
+   - Check Kafka connectivity
+   - Verify database connection
+   - Monitor event processing logs
+
+3. **Database Issues**:
+   - Verify tables are created
+   - Check connection settings
+   - Monitor resource usage
 
 ## Technology Stack
 
@@ -113,54 +187,6 @@ graph LR
   - Automatic code generation
   - Smaller payload size compared to JSON
   - Perfect for high-performance communication
-
-## Database Schema
-
-```mermaid
-erDiagram
-    keycloak_events ||--o{ event_details : has
-    keycloak_events ||--o{ event_outbox : has
-    
-    keycloak_events {
-        UUID id PK
-        string event_type
-        string realm_id
-        string client_id
-        string user_id
-        string session_id
-        string ip_address
-        string error
-        JSONB details
-        timestamp created_at
-    }
-    
-    event_details {
-        UUID id PK
-        UUID event_id FK
-        string detail_type
-        string detail_key
-        text detail_value
-        timestamp created_at
-    }
-    
-    event_outbox {
-        UUID id PK
-        UUID event_id FK
-        string status
-        int retry_count
-        text last_error
-        timestamp published_at
-        timestamp created_at
-        timestamp updated_at
-    }
-```
-
-The `event_details` table serves as a flexible extension to the main `keycloak_events` table:
-- Stores additional metadata and context for events
-- Supports multiple detail types per event
-- Allows for structured key-value pairs
-- Maintains referential integrity with the main events table
-- Enables efficient querying of specific event details
 
 ## Event Flow
 
@@ -253,23 +279,6 @@ sequenceDiagram
   - Event processing latency
   - Kafka publishing success rate
   - Database transaction metrics
-
-## Troubleshooting
-
-1. **Event Not Published**
-   - Check outbox table for failed events
-   - Verify Kafka connectivity
-   - Review error logs in Keycloak
-
-2. **High Latency**
-   - Monitor database performance
-   - Check Kafka consumer lag
-   - Review outbox poller configuration
-
-3. **Data Inconsistency**
-   - Verify transaction boundaries
-   - Check for duplicate events
-   - Review error handling logic
 
 ## Development
 

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redpanda
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: redpanda
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              /usr/bin/rpk redpanda start \
+                --node-id $(hostname | sed 's/redpanda-//') \
+                --kafka-addr 0.0.0.0:9092 \
+                --advertise-kafka-addr redpanda-$(hostname | sed 's/redpanda-//').redpanda:9092 \
+                --smp 2 \
+                --memory 2G \
+                --overprovisioned 

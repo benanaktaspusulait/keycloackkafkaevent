@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: smartface
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: smartface
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:latest
+          command: ["/opt/keycloak/bin/kc.sh"]
+          args: ["start-dev", "--http-enabled=true", "--hostname-strict=false"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartface-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_URL
+              value: "jdbc:postgresql://postgres:5432/keycloak"
+            - name: KC_DB_USERNAME
+              value: "keycloak"
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartface-secrets
+                  key: KC_DB_PASSWORD
+            - name: KC_EVENTS_LISTENER
+              value: "kafka"
+            - name: KC_EVENTS_LISTENER_KAFKA_BOOTSTRAP_SERVERS
+              value: "redpanda:29092"
+            - name: KC_EVENTS_LISTENER_KAFKA_TOPIC
+              value: "keycloak_events"
+            - name: KC_EVENTS_LISTENER_KAFKA_CLIENT_ID
+              value: "keycloak-event-listener"
+            - name: KC_EVENTS_LISTENER_DB_URL
+              value: "jdbc:postgresql://postgres:5432/keycloak"
+            - name: KC_EVENTS_LISTENER_DB_USER
+              value: "keycloak"
+            - name: KC_EVENTS_LISTENER_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartface-secrets
+                  key: KC_DB_PASSWORD
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10 
