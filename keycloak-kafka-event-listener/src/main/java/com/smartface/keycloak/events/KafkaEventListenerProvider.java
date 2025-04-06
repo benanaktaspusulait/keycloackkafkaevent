@@ -54,7 +54,9 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, event.getId());
-            pstmt.setTimestamp(2, new java.sql.Timestamp(event.getTime()));
+            // Always use current time if event time is not set or is 0
+            long eventTime = event.getTime() <= 0 ? System.currentTimeMillis() : event.getTime();
+            pstmt.setTimestamp(2, new java.sql.Timestamp(eventTime));
             pstmt.setString(3, event.getType().name());
             pstmt.setString(4, event.getRealmId());
             pstmt.setString(5, event.getClientId());

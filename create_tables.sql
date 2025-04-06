@@ -1,14 +1,15 @@
 -- Create the events table
 CREATE TABLE IF NOT EXISTS keycloak_events (
     id VARCHAR(255) PRIMARY KEY,
-    time TIMESTAMP NOT NULL,
-    type VARCHAR(255) NOT NULL,
+    time TIMESTAMP ,
+    event_type VARCHAR(255) NOT NULL,
     realm_id VARCHAR(255) NOT NULL,
     client_id VARCHAR(255),
     user_id VARCHAR(255),
     session_id VARCHAR(255),
     ip_address VARCHAR(255),
     error VARCHAR(255),
+    event_time TIMESTAMP NOT NULL DEFAULT NOW(),
     details JSONB
 );
 
