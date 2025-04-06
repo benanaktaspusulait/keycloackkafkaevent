@@ -1,5 +1,5 @@
 -- Create the events table
-CREATE TABLE IF NOT EXISTS events (
+CREATE TABLE IF NOT EXISTS keycloak_events (
     id VARCHAR(255) PRIMARY KEY,
     time TIMESTAMP NOT NULL,
     type VARCHAR(255) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_events_time ON events(time);
-CREATE INDEX IF NOT EXISTS idx_events_type ON events(type);
-CREATE INDEX IF NOT EXISTS idx_events_realm_id ON events(realm_id);
-CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id); 
+CREATE INDEX IF NOT EXISTS idx_events_time ON keycloak_events(time);
+CREATE INDEX IF NOT EXISTS idx_events_type ON keycloak_events(type);
+CREATE INDEX IF NOT EXISTS idx_events_realm_id ON keycloak_events(realm_id);
+CREATE INDEX IF NOT EXISTS idx_events_user_id ON keycloak_events(user_id); 

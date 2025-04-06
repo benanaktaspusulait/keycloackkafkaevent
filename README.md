@@ -9,7 +9,8 @@ This project implements a system to capture and process Keycloak events using Ka
 ├── keycloak-kafka-event-listener/    # Keycloak event listener implementation
 ├── keycloak-event-service/           # Event service that consumes and processes events
 │   ├── k8s/                         # Kubernetes deployment configurations
-│   └── scripts/                     # Utility scripts
+│   ├── src/                         # Source code
+│   └── pom.xml                      # Maven configuration
 ├── docker-compose.yml                # Docker configuration for all services
 ├── create_tables.sql                 # Database schema
 └── testcase-1.pdf                    # Project documentation
@@ -46,15 +47,15 @@ The system is configured through:
 ## Getting Started
 
 ### Development Environment (Docker Compose)
-1. Start the services:
+1. Build and start the services:
 ```bash
-docker compose up -d
+docker-compose up --build
 ```
 
-2. The event service will automatically:
-- Connect to Redpanda (Kafka)
-- Create necessary database tables
-- Start consuming events
+2. The system will automatically:
+- Initialize the PostgreSQL database with required tables
+- Start Keycloak with the event listener
+- Start the event service to consume and process events
 
 ### Production Deployment (Kubernetes)
 The project includes Kubernetes configurations in `keycloak-event-service/k8s/`:
@@ -84,25 +85,35 @@ The Kubernetes deployment includes:
 - TLS configuration for gRPC
 - Secure secret management
 
-## Utility Scripts
+## Database Schema
 
-The `scripts/` directory contains:
-- `setup-keycloak.sh`: Automates Keycloak configuration including:
-  - Realm creation
-  - Client setup
-  - User creation
-  - Event listener configuration
+The `create_tables.sql` file defines the database schema:
+- `keycloak_events` table for storing events
+- Indexes for optimized query performance
+- JSONB field for flexible event details storage
 
 ## Troubleshooting
 
-If you encounter connection issues:
-1. Verify Redpanda is running and accessible
-2. Check the event service logs
-3. Ensure all services are on the same Docker network
-4. For Kubernetes deployments, check pod status and logs
+If you encounter issues:
+1. Check service logs:
+```bash
+docker-compose logs -f [service-name]
+```
+
+2. Verify database tables:
+```bash
+docker exec -it smartface-postgres-1 psql -U postgres -d keycloak_events -c "\dt"
+```
+
+3. Common issues:
+- Ensure all services are running and healthy
+- Check database connection settings
+- Verify Kafka topic configuration
+- Monitor event service logs for processing errors
 
 ## Development
 
 - The project uses Java with Quarkus framework
 - Kafka integration is handled by SmallRye Reactive Messaging
-- Database operations use JPA/Hibernate 
+- Database operations use JPA/Hibernate
+- Event processing is implemented using reactive streams 
