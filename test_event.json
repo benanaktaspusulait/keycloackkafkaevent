@@ -1,0 +1,13 @@
+{
+  "type": "LOGIN",
+  "realmId": "test-realm",
+  "clientId": "test-client",
+  "userId": "test-user",
+  "sessionId": "test-session",
+  "ipAddress": "127.0.0.1",
+  "time": 1712385600000,
+  "details": {
+    "key1": "value1",
+    "key2": "value2"
+  }
+} 
