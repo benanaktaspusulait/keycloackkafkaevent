@@ -1,9 +1,9 @@
 package com.smartface.event;
 
 
-import com.smartface.keycloak.events.entity.EventStatus;
-import com.smartface.keycloak.events.entity.OutboxEvent;
-import com.smartface.keycloak.events.repository.OutboxEventRepository;
+import com.smartface.entity.EventStatus;
+import com.smartface.entity.OutboxEvent;
+import com.smartface.repository.OutboxEventRepository;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

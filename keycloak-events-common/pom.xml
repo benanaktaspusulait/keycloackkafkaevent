@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>keycloak-events-common</artifactId>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
@@ -25,6 +26,10 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
         </dependency>
     </dependencies>
 </project> 

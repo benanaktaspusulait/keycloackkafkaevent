@@ -1,8 +1,8 @@
-package com.smartface.keycloak.events;
+package com.smartface;
 
-import com.smartface.keycloak.events.repository.EventDetailsRepository;
-import com.smartface.keycloak.events.repository.EventOutboxRepository;
-import com.smartface.keycloak.events.repository.KeycloakEventRepository;
+import com.smartface.repository.EventDetailsRepository;
+import com.smartface.repository.EventOutboxRepository;
+import com.smartface.repository.KeycloakEventRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.keycloak.Config;

@@ -1,22 +1,22 @@
 package com.smartface.keycloak.events.entity;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "keycloak_events")
-public class KeycloakEvent {
-    @Id
-    private String id;
+public class KeycloakEvent extends PanacheEntity {
 
-    @Column(name = "time")
-    private Instant time;
+    @Column(name = "time", nullable = false)
+    private Instant time = Instant.now();
 
     @Column(name = "type")
     private String type;

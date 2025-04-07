@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>keycloak-event-service</artifactId>
+    <packaging>jar</packaging>
 
     <properties>
         <compiler-plugin.version>3.11.0</compiler-plugin.version>
@@ -152,11 +153,6 @@
             <artifactId>mutiny-test-utils</artifactId>
             <version>2.3.0</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.smartface</groupId>
-            <artifactId>keycloak-events-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

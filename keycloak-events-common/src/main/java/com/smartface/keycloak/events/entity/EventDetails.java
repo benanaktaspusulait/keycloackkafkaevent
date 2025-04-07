@@ -1,15 +1,15 @@
 package com.smartface.keycloak.events.entity;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "event_details")
-public class EventDetails {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class EventDetails extends PanacheEntity {
 
     @Column(name = "event_id")
     private String eventId;

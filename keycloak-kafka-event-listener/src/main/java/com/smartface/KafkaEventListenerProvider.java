@@ -1,14 +1,14 @@
-package com.smartface.keycloak.events;
+package com.smartface;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smartface.keycloak.events.entity.EventDetails;
-import com.smartface.keycloak.events.entity.EventOutbox;
-import com.smartface.keycloak.events.entity.EventStatus;
-import com.smartface.keycloak.events.entity.KeycloakEvent;
-import com.smartface.keycloak.events.repository.EventDetailsRepository;
-import com.smartface.keycloak.events.repository.EventOutboxRepository;
-import com.smartface.keycloak.events.repository.KeycloakEventRepository;
+import com.smartface.entity.EventDetails;
+import com.smartface.entity.EventOutbox;
+import com.smartface.entity.EventStatus;
+import com.smartface.entity.KeycloakEvent;
+import com.smartface.repository.EventDetailsRepository;
+import com.smartface.repository.EventOutboxRepository;
+import com.smartface.repository.KeycloakEventRepository;
 import jakarta.transaction.Transactional;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;

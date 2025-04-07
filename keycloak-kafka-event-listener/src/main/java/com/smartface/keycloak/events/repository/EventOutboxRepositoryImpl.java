@@ -1,25 +1,29 @@
 package com.smartface.keycloak.events.repository;
 
+import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
-import com.smartface.keycloak.events.entity.OutboxEvent;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.Transactional;
 import java.util.List;
 
 @ApplicationScoped
-public class OutboxEventRepository implements PanacheRepository<OutboxEvent> {
+public class EventOutboxRepositoryImpl implements EventOutboxRepository {
+    @Override
+    public void persist(EventOutbox entity) {
+        PanacheRepository.super.persist(entity);
+    }
 
-    public List<OutboxEvent> findPendingEvents() {
+    @Override
+    public List<EventOutbox> findPendingEvents() {
         return find("status = ?1 AND (retryCount < 3 OR retryCount IS NULL) ORDER BY createdAt",
                 EventStatus.PENDING)
                 .page(0, 10)
                 .list();
     }
 
-    @Transactional
-    public void updateStatus(Long id, EventStatus status, String error) {
-        OutboxEvent event = findById(id);
+    @Override
+    public void updateStatus(String id, EventStatus status, String error) {
+        EventOutbox event = findById(id);
         if (event != null) {
             event.setStatus(status);
             event.setLastError(error);

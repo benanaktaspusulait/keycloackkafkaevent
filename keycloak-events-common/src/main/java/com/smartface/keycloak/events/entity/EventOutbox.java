@@ -1,15 +1,16 @@
 package com.smartface.keycloak.events.entity;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.Instant;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "event_outbox")
-public class EventOutbox {
-    @Id
-    private String id;
+public class EventOutbox extends PanacheEntity {
 
     @Column(name = "event_id")
     private String eventId;
@@ -36,6 +37,9 @@ public class EventOutbox {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", referencedColumnName = "id", insertable = false, updatable = false)
     private KeycloakEvent event;
@@ -53,4 +57,4 @@ public class EventOutbox {
     protected void onUpdate() {
         updatedAt = Instant.now();
     }
-}
+} 
