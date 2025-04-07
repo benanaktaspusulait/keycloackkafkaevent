@@ -22,7 +22,6 @@ public class OutboxPoller {
 
     private final OutboxEventRepository outboxEventRepository;
     private final Emitter<String> kafkaEmitter;
-    private final String topic;
 
     @Inject
     public OutboxPoller(OutboxEventRepository outboxEventRepository,
@@ -30,7 +29,6 @@ public class OutboxPoller {
                        @ConfigProperty(name = "mp.messaging.outgoing.keycloak-events-out.topic") String topic) {
         this.outboxEventRepository = outboxEventRepository;
         this.kafkaEmitter = kafkaEmitter;
-        this.topic = topic;
     }
 
     @Scheduled(every = "5s")

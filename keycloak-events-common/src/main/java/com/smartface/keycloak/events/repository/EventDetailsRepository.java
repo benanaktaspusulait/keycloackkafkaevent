@@ -2,7 +2,6 @@ package com.smartface.keycloak.events.repository;
 
 import com.smartface.keycloak.events.entity.EventDetails;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.logging.Logger;
