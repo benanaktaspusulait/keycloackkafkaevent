@@ -3,7 +3,6 @@ package com.smartface.event;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smartface.keycloak.events.entity.EventEntity;
 import com.smartface.keycloak.events.repository.EventRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -40,13 +39,13 @@ public class EventConsumer {
     private void processEvent(String eventJson) throws JsonProcessingException {
         Log.info("Received event: {}");
         JsonNode eventNode = objectMapper.readTree(eventJson);
-        EventEntity event = mapEventNodeToEntity(eventNode);
+        com.smartface.event.entity.EventEntity event = mapEventNodeToEntity(eventNode);
         eventRepository.persist(event);
         log.info("Successfully persisted event with id: {}", event.getId());
     }
 
-    private EventEntity mapEventNodeToEntity(JsonNode eventNode) {
-        EventEntity event = new EventEntity();
+    private com.smartface.event.entity.EventEntity mapEventNodeToEntity(JsonNode eventNode) {
+        com.smartface.event.entity.EventEntity event = new com.smartface.event.entity.EventEntity();
         event.setId(eventNode.get("id").asText());
         event.setTime(getEventTime(eventNode));
         event.setType(eventNode.get("type").asText());

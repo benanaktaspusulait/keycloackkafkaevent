@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:keycloak-event-service/src/main/java/com/smartface/event/entity/EventEntity.java
 package com.smartface.event.entity;
-========
-package com.smartface.keycloak.events.entity;
->>>>>>>> 58a7f57 (jpa update):keycloak-events-common/src/main/java/com/smartface/keycloak/events/entity/EventEntity.java
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,7 +1,6 @@
 package com.smartface.event;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smartface.keycloak.events.entity.EventEntity;
 import com.smartface.keycloak.events.repository.EventRepository;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -43,7 +42,7 @@ class EventConsumerTest {
 
         eventConsumer.consume(eventJson);
 
-        Mockito.verify(eventRepository).persist(Mockito.any(EventEntity.class));
+        Mockito.verify(eventRepository).persist(Mockito.any(com.smartface.event.entity.EventEntity.class));
     }
 
     @Test
@@ -58,7 +57,7 @@ class EventConsumerTest {
 
         eventConsumer.consume(eventJson);
 
-        Mockito.verify(eventRepository).persist(Mockito.any(EventEntity.class));
+        Mockito.verify(eventRepository).persist(Mockito.any(com.smartface.event.entity.EventEntity.class));
     }
 
     @Test
@@ -67,6 +66,6 @@ class EventConsumerTest {
 
         eventConsumer.consume(eventJson);
 
-        Mockito.verify(eventRepository, Mockito.never()).persist(Mockito.any(EventEntity.class));
+        Mockito.verify(eventRepository, Mockito.never()).persist(Mockito.any(com.smartface.event.entity.EventEntity.class));
     }
 } 
