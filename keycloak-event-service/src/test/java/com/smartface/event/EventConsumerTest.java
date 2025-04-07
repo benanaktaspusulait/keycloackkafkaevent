@@ -1,10 +1,10 @@
 package com.smartface.event;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smartface.event.entity.EventEntity;
-import com.smartface.event.repository.EventRepository;
-import io.quarkus.test.junit.QuarkusTest;
+import com.smartface.keycloak.events.entity.EventEntity;
+import com.smartface.keycloak.events.repository.EventRepository;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @QuarkusTest
-public class EventConsumerTest {
+class EventConsumerTest {
 
     @InjectMock
     EventRepository eventRepository;
@@ -27,7 +27,7 @@ public class EventConsumerTest {
     }
 
     @Test
-    void testConsumeEvent() throws Exception {
+    void testConsumeEvent() {
         String eventJson = """
             {
                 "id": "%s",
@@ -47,7 +47,7 @@ public class EventConsumerTest {
     }
 
     @Test
-    void testConsumeEventWithMissingFields() throws Exception {
+    void testConsumeEventWithMissingFields() {
         String eventJson = """
             {
                 "id": "%s",
