@@ -1,181 +1,142 @@
 package com.smartface.keycloak.events;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smartface.keycloak.events.entity.EventDetails;
+import com.smartface.keycloak.events.entity.EventOutbox;
+import com.smartface.keycloak.events.entity.EventStatus;
+import com.smartface.keycloak.events.entity.KeycloakEvent;
+import com.smartface.keycloak.events.repository.EventDetailsRepository;
+import com.smartface.keycloak.events.repository.EventOutboxRepository;
+import com.smartface.keycloak.events.repository.KeycloakEventRepository;
+import jakarta.transaction.Transactional;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.admin.AdminEvent;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import java.util.Map;
 
 public class KafkaEventListenerProvider implements EventListenerProvider {
 
     private static final Logger LOGGER = Logger.getLogger(KafkaEventListenerProvider.class.getName());
+    private static final String ERROR_MESSAGE = "Failed to process event: ";
 
     private final String bootstrapServers;
     private final String topic;
     private final String clientId;
     private final ObjectMapper objectMapper;
-    private final String dbUrl;
-    private final String dbUser;
-    private final String dbPassword;
+    private final KeycloakEventRepository eventRepository;
+    private final EventDetailsRepository detailsRepository;
+    private final EventOutboxRepository outboxRepository;
 
-    public KafkaEventListenerProvider(String bootstrapServers, String topic, String clientId) {
+    public KafkaEventListenerProvider(String bootstrapServers, String topic, String clientId,
+                                    KeycloakEventRepository eventRepository,
+                                    EventDetailsRepository detailsRepository,
+                                    EventOutboxRepository outboxRepository) {
         this.bootstrapServers = bootstrapServers;
         this.topic = topic;
         this.clientId = clientId;
         this.objectMapper = new ObjectMapper();
-        
-        // Database configuration
-        this.dbUrl = System.getenv("KC_EVENTS_LISTENER_DB_URL");
-        this.dbUser = System.getenv("KC_EVENTS_LISTENER_DB_USER");
-        this.dbPassword = System.getenv("KC_EVENTS_LISTENER_DB_PASSWORD");
+        this.eventRepository = eventRepository;
+        this.detailsRepository = detailsRepository;
+        this.outboxRepository = outboxRepository;
     }
 
-    private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-    }
-
-    private void storeEventDetails(Connection conn, String eventId, Map<String, String> details) throws SQLException {
+    @Transactional
+    private void storeEventDetails(String eventId, Map<String, String> details) {
         if (details == null || details.isEmpty()) {
             return;
         }
 
-        String sql = "INSERT INTO event_details (event_id, detail_key, detail_value) VALUES (?, ?, ?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Map.Entry<String, String> entry : details.entrySet()) {
-                pstmt.setString(1, eventId);
-                pstmt.setString(2, entry.getKey());
-                pstmt.setString(3, entry.getValue());
-                pstmt.addBatch();
-            }
-            pstmt.executeBatch();
+        for (Map.Entry<String, String> entry : details.entrySet()) {
+            EventDetails eventDetails = new EventDetails();
+            eventDetails.setEventId(eventId);
+            eventDetails.setKey(entry.getKey());
+            eventDetails.setValue(entry.getValue());
+            detailsRepository.save(eventDetails);
         }
     }
 
-    private void storeInOutbox(Connection conn, String eventId, String eventJson) throws SQLException {
-        String sql = "INSERT INTO event_outbox (id, event_id, topic, payload, status) " +
-                    "VALUES (?, ?, ?, ?::jsonb, 'PENDING')";
-        
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, UUID.randomUUID().toString());
-            pstmt.setString(2, eventId);
-            pstmt.setString(3, topic);
-            pstmt.setString(4, eventJson);
-            pstmt.executeUpdate();
-        }
+    @Transactional
+    private void storeInOutbox(String eventId, String eventJson) {
+        EventOutbox outbox = new EventOutbox();
+        outbox.setId(UUID.randomUUID().toString());
+        outbox.setEventId(eventId);
+        outbox.setTopic(topic);
+        outbox.setPayload(eventJson);
+        outbox.setStatus(EventStatus.PENDING);
+        outboxRepository.save(outbox);
     }
 
+    @Transactional
     private void processEvent(Event event) {
-        try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
+        try {
+            KeycloakEvent keycloakEvent = new KeycloakEvent();
+            keycloakEvent.setId(event.getId());
+            keycloakEvent.setTime(Instant.ofEpochMilli(event.getTime() <= 0 ? System.currentTimeMillis() : event.getTime()));
+            keycloakEvent.setType(event.getType().name());
+            keycloakEvent.setRealmId(event.getRealmId());
+            keycloakEvent.setClientId(event.getClientId());
+            keycloakEvent.setUserId(event.getUserId());
+            keycloakEvent.setSessionId(event.getSessionId());
+            keycloakEvent.setIpAddress(event.getIpAddress());
+            keycloakEvent.setError(event.getError());
+            
             try {
-                // Store event in main table
-                String sql = "INSERT INTO keycloak_events (id, time, type, realm_id, client_id, user_id, session_id, ip_address, error, details) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)";
-                
-                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                    pstmt.setString(1, event.getId());
-                    long eventTime = event.getTime() <= 0 ? System.currentTimeMillis() : event.getTime();
-                    pstmt.setTimestamp(2, new java.sql.Timestamp(eventTime));
-                    pstmt.setString(3, event.getType().name());
-                    pstmt.setString(4, event.getRealmId());
-                    pstmt.setString(5, event.getClientId());
-                    pstmt.setString(6, event.getUserId());
-                    pstmt.setString(7, event.getSessionId());
-                    pstmt.setString(8, event.getIpAddress());
-                    pstmt.setString(9, event.getError());
-                    
-                    String detailsJson;
-                    try {
-                        detailsJson = objectMapper.writeValueAsString(event.getDetails());
-                    } catch (JsonProcessingException e) {
-                        LOGGER.warning("Failed to serialize event details: " + e.getMessage());
-                        detailsJson = "{}";
-                    }
-                    pstmt.setString(10, detailsJson);
-                    
-                    pstmt.executeUpdate();
-                }
-
-                // Store details in event_details table
-                storeEventDetails(conn, event.getId(), event.getDetails());
-
-                // Store in outbox
-                String eventJson = objectMapper.writeValueAsString(event);
-                storeInOutbox(conn, event.getId(), eventJson);
-
-                conn.commit();
-                LOGGER.info("Successfully processed event: " + event.getId());
-            } catch (Exception e) {
-                conn.rollback();
-                LOGGER.severe("Failed to process event: " + e.getMessage());
-                throw e;
+                keycloakEvent.setDetails(objectMapper.writeValueAsString(event.getDetails()));
+            } catch (JsonProcessingException e) {
+                LOGGER.warning("Failed to serialize event details: " + e.getMessage());
+                keycloakEvent.setDetails("{}");
             }
+            
+            eventRepository.save(keycloakEvent);
+            storeEventDetails(event.getId(), event.getDetails());
+            storeInOutbox(event.getId(), objectMapper.writeValueAsString(event));
+
+            LOGGER.info("Successfully processed event: " + event.getId());
         } catch (Exception e) {
-            LOGGER.severe("Database error while processing event: " + e.getMessage());
-            throw new RuntimeException("Failed to process event", e);
+            LOGGER.severe(ERROR_MESSAGE + e.getMessage());
+            throw new RuntimeException(ERROR_MESSAGE + event.getId(), e);
         }
     }
 
+    @Transactional
     private void processAdminEvent(AdminEvent adminEvent) {
-        try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
+        try {
+            KeycloakEvent keycloakEvent = new KeycloakEvent();
+            keycloakEvent.setId(adminEvent.getId());
+            keycloakEvent.setTime(Instant.ofEpochMilli(adminEvent.getTime()));
+            keycloakEvent.setType("ADMIN_" + adminEvent.getOperationType().name());
+            keycloakEvent.setRealmId(adminEvent.getRealmId());
+            keycloakEvent.setClientId(adminEvent.getResourceType().name());
+            keycloakEvent.setUserId(adminEvent.getAuthDetails().getUserId());
+            
             try {
-                // Store admin event in main table
-                String sql = "INSERT INTO keycloak_events (id, time, type, realm_id, client_id, user_id, details) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)";
-                
-                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                    pstmt.setString(1, adminEvent.getId());
-                    pstmt.setTimestamp(2, new java.sql.Timestamp(adminEvent.getTime()));
-                    pstmt.setString(3, "ADMIN_" + adminEvent.getOperationType().name());
-                    pstmt.setString(4, adminEvent.getRealmId());
-                    pstmt.setString(5, adminEvent.getResourceType().name());
-                    pstmt.setString(6, adminEvent.getAuthDetails().getUserId());
-                    
-                    String representationJson;
-                    try {
-                        representationJson = objectMapper.writeValueAsString(adminEvent.getRepresentation());
-                    } catch (JsonProcessingException e) {
-                        LOGGER.warning("Failed to serialize admin event representation: " + e.getMessage());
-                        representationJson = "{}";
-                    }
-                    pstmt.setString(7, representationJson);
-                    
-                    pstmt.executeUpdate();
-                }
-
-                // Store admin event details
-                if (adminEvent.getRepresentation() != null) {
-                    Map<String, String> details = Map.of(
-                        "resourceType", adminEvent.getResourceType().name(),
-                        "operationType", adminEvent.getOperationType().name(),
-                        "representation", adminEvent.getRepresentation()
-                    );
-                    storeEventDetails(conn, adminEvent.getId(), details);
-                }
-
-                // Store in outbox
-                String eventJson = objectMapper.writeValueAsString(adminEvent);
-                storeInOutbox(conn, adminEvent.getId(), eventJson);
-
-                conn.commit();
-                LOGGER.info("Successfully processed admin event: " + adminEvent.getId());
-            } catch (Exception e) {
-                conn.rollback();
-                LOGGER.severe("Failed to process admin event: " + e.getMessage());
-                throw e;
+                keycloakEvent.setDetails(objectMapper.writeValueAsString(adminEvent.getRepresentation()));
+            } catch (JsonProcessingException e) {
+                LOGGER.warning("Failed to serialize admin event representation: " + e.getMessage());
+                keycloakEvent.setDetails("{}");
             }
+            
+            eventRepository.save(keycloakEvent);
+
+            if (adminEvent.getRepresentation() != null) {
+                Map<String, String> details = Map.of(
+                    "resourceType", adminEvent.getResourceType().name(),
+                    "operationType", adminEvent.getOperationType().name(),
+                    "representation", adminEvent.getRepresentation()
+                );
+                storeEventDetails(adminEvent.getId(), details);
+            }
+
+            storeInOutbox(adminEvent.getId(), objectMapper.writeValueAsString(adminEvent));
+            LOGGER.info("Successfully processed admin event: " + adminEvent.getId());
         } catch (Exception e) {
-            LOGGER.severe("Database error while processing admin event: " + e.getMessage());
-            throw new RuntimeException("Failed to process admin event", e);
+            LOGGER.severe(ERROR_MESSAGE + e.getMessage());
+            throw new RuntimeException(ERROR_MESSAGE + adminEvent.getId(), e);
         }
     }
 
@@ -184,8 +145,8 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
         try {
             processEvent(event);
         } catch (Exception e) {
-            LOGGER.severe("Error processing event: " + e.getMessage());
-            throw new RuntimeException("Failed to process event", e);
+            LOGGER.severe(ERROR_MESSAGE + e.getMessage());
+            throw new RuntimeException(ERROR_MESSAGE + event.getId(), e);
         }
     }
 
@@ -194,8 +155,8 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
         try {
             processAdminEvent(adminEvent);
         } catch (Exception e) {
-            LOGGER.severe("Error processing admin event: " + e.getMessage());
-            throw new RuntimeException("Failed to process admin event", e);
+            LOGGER.severe(ERROR_MESSAGE + e.getMessage());
+            throw new RuntimeException(ERROR_MESSAGE + adminEvent.getId(), e);
         }
     }
 
