@@ -1,0 +1,22 @@
+FROM registry.access.redhat.com/ubi8/openjdk-21:1.18
+
+ENV LANGUAGE='en_US:en'
+
+# Install necessary packages
+USER root
+RUN microdnf install -y curl ca-certificates \
+    && microdnf clean all \
+    && mkdir -p /deployments/ObjectStore/ShadowNoFileLockStore/defaultStore \
+    && chown -R 1001:0 /deployments \
+    && chmod -R g+rwX /deployments \
+    && chmod -R 775 /deployments/ObjectStore
+
+# Configure the JAVA_OPTS for proper transaction manager setup
+ENV JAVA_OPTS="-Dcom.arjuna.ats.arjuna.objectstore.objectStoreDir=/deployments/ObjectStore"
+
+USER 1001
+
+COPY target/*-runner.jar /deployments/app.jar
+
+EXPOSE 8080
+ENTRYPOINT [ "java", "-jar", "/deployments/app.jar" ]

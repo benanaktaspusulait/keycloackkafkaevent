@@ -14,50 +14,50 @@ import java.time.Instant;
 public class EventOutbox extends PanacheEntity {
 
     @Column(name = "event_id", unique = true)
-    public String eventId;
+    private String eventId;
 
     @Column(name = "event_type")
-    public String eventType;
+    private String eventType;
 
     @Column(name = "realm_id")
-    public String realmId;
+    private String realmId;
 
     @Column(name = "client_id")
-    public String clientId;
+    private String clientId;
 
     @Column(name = "user_id")
-    public String userId;
+    private String userId;
 
     @Column(name = "session_id")
-    public String sessionId;
+    private String sessionId;
 
     @Column(name = "ip_address")
-    public String ipAddress;
+    private String ipAddress;
 
     @Column(name = "error")
-    public String error;
+    private String error;
 
     @Column(name = "details", columnDefinition = "jsonb")
-    public String details;
+    private String details;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    public EventStatus status;
+    private EventStatus status;
 
     @Column(name = "retry_count")
-    public Integer retryCount;
+    private Integer retryCount;
 
     @Column(name = "last_error")
-    public String lastError;
+    private String lastError;
 
     @Column(name = "created_at")
-    public Instant createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at")
-    public Instant updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "published_at")
-    public Instant publishedAt;
+    private Instant publishedAt;
 
     @PrePersist
     protected void onCreate() {

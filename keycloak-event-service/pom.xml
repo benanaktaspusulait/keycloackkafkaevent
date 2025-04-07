@@ -23,9 +23,10 @@
         <jackson.version>2.15.3</jackson.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <net.bytebuddy.experimental>true</net.bytebuddy.experimental>
-        <byte-buddy.version>1.14.11</byte-buddy.version>
+        <byte-buddy.version>1.14.13</byte-buddy.version>
         <quarkus.package.type>uber-jar</quarkus.package.type>
         <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+        <lombok.version>1.18.24</lombok.version>
     </properties>
 
     <dependencies>
@@ -160,6 +161,11 @@
             <version>2.3.0</version>
             <scope>test</scope>
         </dependency>
+        <!-- Container Image -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image-docker</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -174,6 +180,7 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.platform.version}</version>
+                <extensions>true</extensions>
                 <executions>
                     <execution>
                         <goals>
@@ -189,9 +196,20 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler-plugin.version}</version>
                 <configuration>
+                    <parameters>${maven.compiler.parameters}</parameters>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
-                    <release>${maven.compiler.source}</release>
+                    <release>${maven.compiler.release}</release>
+                    <compilerArgs>
+                        <arg>-J-Dnet.bytebuddy.experimental=true</arg>
+                    </compilerArgs>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>

@@ -1,6 +1,7 @@
 -- Create the events table
 CREATE TABLE IF NOT EXISTS keycloak_events (
-    id VARCHAR(255) PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
+    event_id VARCHAR(255) UNIQUE NOT NULL,
     time TIMESTAMP NOT NULL DEFAULT NOW(),
     type VARCHAR(255) NOT NULL,
     realm_id VARCHAR(255) NOT NULL,
@@ -14,23 +15,31 @@ CREATE TABLE IF NOT EXISTS keycloak_events (
 
 -- Create the outbox table
 CREATE TABLE IF NOT EXISTS event_outbox (
-    id VARCHAR(255) PRIMARY KEY,
-    event_id VARCHAR(255) REFERENCES keycloak_events(id),
-    topic VARCHAR(255) NOT NULL,
-    payload JSONB NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    event_id VARCHAR(255) UNIQUE NOT NULL,
+    event_type VARCHAR(255) NOT NULL,
+    realm_id VARCHAR(255),
+    client_id VARCHAR(255),
+    user_id VARCHAR(255),
+    session_id VARCHAR(255),
+    ip_address VARCHAR(255),
+    error VARCHAR(255),
+    details JSONB,
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    published_at TIMESTAMP,
     retry_count INTEGER DEFAULT 0,
-    last_error TEXT
+    last_error TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    published_at TIMESTAMP
 );
 
 -- Create the event details table
 CREATE TABLE IF NOT EXISTS event_details (
-    event_id VARCHAR(255) REFERENCES keycloak_events(id),
-    detail_key VARCHAR(255) NOT NULL,
-    detail_value TEXT,
-    PRIMARY KEY (event_id, detail_key)
+    id BIGSERIAL PRIMARY KEY,
+    event_id VARCHAR(255) NOT NULL,
+    key VARCHAR(255) NOT NULL,
+    value TEXT,
+    CONSTRAINT fk_event_details_event FOREIGN KEY (event_id) REFERENCES keycloak_events(event_id) ON DELETE CASCADE
 );
 
 -- Create indexes for better query performance

@@ -5,14 +5,14 @@ import com.smartface.keycloak.events.entity.EventStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
+import java.util.logging.Logger;
 
-@Slf4j
 @ApplicationScoped
 public class EventConsumer {
 
+    private static final Logger logger = Logger.getLogger(EventConsumer.class.getName());
     private final EventService eventService;
 
     @Inject
@@ -22,12 +22,12 @@ public class EventConsumer {
 
     @Transactional
     public void consume(String eventId, String eventType, String details) {
-        log.info("Consuming event with ID: {}", eventId);
+        logger.info("Consuming event with ID: " + eventId);
 
         EventOutbox event = createEventOutbox(eventId, eventType, details);
 
         try {
-            log.info("Processing event with ID: {}, type: {}", event.getEventId(), event.getEventType());
+            logger.info("Processing event with ID: " + event.getEventId() + ", type: " + event.getEventType());
             eventService.processEvent(
                     event.getEventId(),
                     event.getEventType(),
@@ -39,9 +39,9 @@ public class EventConsumer {
                     null,
                     event.getDetails()
             );
-            log.info("Successfully processed event with ID: {}", event.getEventId());
+            logger.info("Successfully processed event with ID: " + event.getEventId());
         } catch (Exception e) {
-            log.error("Error processing event with ID: {}", event.getEventId(), e);
+            logger.severe("Error processing event with ID: " + event.getEventId() + ": " + e.getMessage());
             throw e;
         }
     }
@@ -49,9 +49,9 @@ public class EventConsumer {
     private EventOutbox createEventOutbox(String eventId, String eventType, String details) {
         EventOutbox event = new EventOutbox();
         event.setEventId(eventId);
-        event.setEventType(eventType);
+        event.setEventType( eventType);
         event.setDetails(details);
-        event.setStatus(EventStatus.PENDING);
+        event.setStatus( EventStatus.PENDING);
         event.setRetryCount(0);
         event.setCreatedAt(Instant.now());
         return event;

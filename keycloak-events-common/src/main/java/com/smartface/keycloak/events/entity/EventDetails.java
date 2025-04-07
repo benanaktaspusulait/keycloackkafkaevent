@@ -11,7 +11,7 @@ import lombok.Setter;
 @Table(name = "event_details")
 public class EventDetails extends PanacheEntity {
     @Column(name = "event_id")
-    public String eventId;
+    public Long eventId;
 
     @Column(name = "detail_key")
     public String key;
