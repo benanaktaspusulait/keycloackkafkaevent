@@ -1,6 +1,8 @@
 package com.smartface.event;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smartface.event.entity.EventEntity;
+import com.smartface.event.repository.EventRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.InjectMock;
 import org.junit.jupiter.api.BeforeEach;

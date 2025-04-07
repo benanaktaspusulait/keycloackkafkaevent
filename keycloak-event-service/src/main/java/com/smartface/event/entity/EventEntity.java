@@ -1,4 +1,4 @@
-package com.smartface.event;
+package com.smartface.event.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
