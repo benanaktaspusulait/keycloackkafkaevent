@@ -1,27 +1,22 @@
-package com.smartface.event;
+package com.smartface.keycloak.events.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "keycloak_events")
-public class EventEntity {
+public class KeycloakEvent {
     @Id
-    @Column(name = "id")
     private String id;
 
-    @Column(name = "time", nullable = false)
-    private Instant time = Instant.now();
+    @Column(name = "time")
+    private Instant time;
 
     @Column(name = "type")
     private String type;
