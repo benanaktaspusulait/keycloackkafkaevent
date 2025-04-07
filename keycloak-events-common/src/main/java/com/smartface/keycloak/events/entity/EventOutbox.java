@@ -2,47 +2,59 @@ package com.smartface.keycloak.events.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import java.time.Instant;
 
-@Getter
-@Setter
+@Data
 @Entity
 @Table(name = "event_outbox")
 public class EventOutbox extends PanacheEntity {
 
-    @Column(name = "event_id")
-    private String eventId;
+    @Column(name = "event_id", unique = true)
+    public String eventId;
 
-    @Column(name = "topic")
-    private String topic;
+    @Column(name = "event_type")
+    public String eventType;
 
-    @Column(name = "payload", columnDefinition = "jsonb")
-    private String payload;
+    @Column(name = "realm_id")
+    public String realmId;
+
+    @Column(name = "client_id")
+    public String clientId;
+
+    @Column(name = "user_id")
+    public String userId;
+
+    @Column(name = "session_id")
+    public String sessionId;
+
+    @Column(name = "ip_address")
+    public String ipAddress;
+
+    @Column(name = "error")
+    public String error;
+
+    @Column(name = "details", columnDefinition = "jsonb")
+    public String details;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    private EventStatus status;
+    public EventStatus status;
 
     @Column(name = "retry_count")
-    private Integer retryCount;
+    public Integer retryCount;
 
     @Column(name = "last_error")
-    private String lastError;
+    public String lastError;
 
     @Column(name = "created_at")
-    private Instant createdAt;
+    public Instant createdAt;
 
     @Column(name = "updated_at")
-    private Instant updatedAt;
+    public Instant updatedAt;
 
     @Column(name = "published_at")
-    private Instant publishedAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private KeycloakEvent event;
+    public Instant publishedAt;
 
     @PrePersist
     protected void onCreate() {

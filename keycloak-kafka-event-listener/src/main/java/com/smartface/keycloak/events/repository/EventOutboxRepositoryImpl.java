@@ -4,26 +4,34 @@ import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import java.util.List;
 
 @ApplicationScoped
 public class EventOutboxRepositoryImpl implements EventOutboxRepository {
-    @Override
-    public void persist(EventOutbox entity) {
-        PanacheRepository.super.persist(entity);
+    private final PanacheRepository<EventOutbox> repository;
+
+    public EventOutboxRepositoryImpl() {
+        this.repository = new PanacheRepository<EventOutbox>() {};
+    }
+
+    @Transactional
+    public void save(EventOutbox outbox) {
+        repository.persist(outbox);
     }
 
     @Override
     public List<EventOutbox> findPendingEvents() {
-        return find("status = ?1 AND (retryCount < 3 OR retryCount IS NULL) ORDER BY createdAt",
+        return repository.find("status = ?1 AND (retryCount < 3 OR retryCount IS NULL) ORDER BY createdAt",
                 EventStatus.PENDING)
                 .page(0, 10)
                 .list();
     }
 
     @Override
+    @Transactional
     public void updateStatus(String id, EventStatus status, String error) {
-        EventOutbox event = findById(id);
+        EventOutbox event = repository.findById(Long.valueOf(id));
         if (event != null) {
             event.setStatus(status);
             event.setLastError(error);
@@ -32,7 +40,7 @@ public class EventOutboxRepositoryImpl implements EventOutboxRepository {
             } else if (status == EventStatus.PUBLISHED) {
                 event.setPublishedAt(java.time.Instant.now());
             }
-            persist(event);
+            repository.persist(event);
         }
     }
 } 

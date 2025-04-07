@@ -2,13 +2,13 @@ package com.smartface;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smartface.entity.EventDetails;
-import com.smartface.entity.EventOutbox;
-import com.smartface.entity.EventStatus;
-import com.smartface.entity.KeycloakEvent;
-import com.smartface.repository.EventDetailsRepository;
-import com.smartface.repository.EventOutboxRepository;
-import com.smartface.repository.KeycloakEventRepository;
+import com.smartface.keycloak.events.entity.EventDetails;
+import com.smartface.keycloak.events.entity.EventOutbox;
+import com.smartface.keycloak.events.entity.EventStatus;
+import com.smartface.keycloak.events.entity.KeycloakEvent;
+import com.smartface.keycloak.events.repository.EventDetailsRepository;
+import com.smartface.keycloak.events.repository.EventOutboxRepository;
+import com.smartface.keycloak.events.repository.KeycloakEventRepository;
 import jakarta.transaction.Transactional;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
@@ -56,19 +56,20 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
             eventDetails.setEventId(eventId);
             eventDetails.setKey(entry.getKey());
             eventDetails.setValue(entry.getValue());
-            detailsRepository.save(eventDetails);
+            detailsRepository.persist(eventDetails);
         }
     }
 
     @Transactional
     private void storeInOutbox(String eventId, String eventJson) {
         EventOutbox outbox = new EventOutbox();
-        outbox.setId(UUID.randomUUID().toString());
-        outbox.setEventId(eventId);
-        outbox.setTopic(topic);
-        outbox.setPayload(eventJson);
-        outbox.setStatus(EventStatus.PENDING);
-        outboxRepository.save(outbox);
+        outbox.eventId = eventId;
+        outbox.eventType = "EVENT";
+        outbox.details = eventJson;
+        outbox.status = EventStatus.PENDING;
+        outbox.retryCount = 0;
+        outbox.createdAt = Instant.now();
+        outboxRepository.persist(outbox);
     }
 
     @Transactional
@@ -92,7 +93,7 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
                 keycloakEvent.setDetails("{}");
             }
             
-            eventRepository.save(keycloakEvent);
+            eventRepository.persist(keycloakEvent);
             storeEventDetails(event.getId(), event.getDetails());
             storeInOutbox(event.getId(), objectMapper.writeValueAsString(event));
 
@@ -121,7 +122,7 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
                 keycloakEvent.setDetails("{}");
             }
             
-            eventRepository.save(keycloakEvent);
+            eventRepository.persist(keycloakEvent);
 
             if (adminEvent.getRepresentation() != null) {
                 Map<String, String> details = Map.of(

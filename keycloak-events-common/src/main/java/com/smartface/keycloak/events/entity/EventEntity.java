@@ -1,4 +1,4 @@
-package com.smartface.entity;
+package com.smartface.keycloak.events.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
