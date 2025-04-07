@@ -2,50 +2,58 @@ package com.smartface.keycloak.events.service;
 
 import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
-import com.smartface.keycloak.events.repository.EventOutboxRepository;
-import io.smallrye.reactive.messaging.kafka.Record;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.jboss.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
+
 import java.time.Instant;
 
+@Slf4j
 @ApplicationScoped
 public class EventConsumer {
-    private static final Logger LOG = Logger.getLogger(EventConsumer.class);
+
+    private final EventService eventService;
 
     @Inject
-    EventService eventService;
+    public EventConsumer(EventService eventService) {
+        this.eventService = eventService;
+    }
 
     @Transactional
     public void consume(String eventId, String eventType, String details) {
-        LOG.infof("Consuming event with ID: %s", eventId);
+        log.info("Consuming event with ID: {}", eventId);
 
-        EventOutbox event = new EventOutbox();
-        event.eventId = eventId;
-        event.eventType = eventType;
-        event.details = details;
-        event.status = EventStatus.PENDING;
-        event.retryCount = 0;
-        event.createdAt = Instant.now();
+        EventOutbox event = createEventOutbox(eventId, eventType, details);
 
         try {
-            LOG.infof("Processing event with ID: %s, type: %s", event.eventId, event.eventType);
+            log.info("Processing event with ID: {}, type: {}", event.getEventId(), event.getEventType());
             eventService.processEvent(
-                event.eventId,
-                event.eventType,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                event.details
+                    event.getEventId(),
+                    event.getEventType(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    event.getDetails()
             );
-            LOG.infof("Successfully processed event with ID: %s", event.eventId);
+            log.info("Successfully processed event with ID: {}", event.getEventId());
         } catch (Exception e) {
-            LOG.errorf("Error processing event with ID: %s - %s", event.eventId, e.getMessage());
+            log.error("Error processing event with ID: {}", event.getEventId(), e);
             throw e;
         }
+    }
+
+    private EventOutbox createEventOutbox(String eventId, String eventType, String details) {
+        EventOutbox event = new EventOutbox();
+        event.setEventId(eventId);
+        event.setEventType(eventType);
+        event.setDetails(details);
+        event.setStatus(EventStatus.PENDING);
+        event.setRetryCount(0);
+        event.setCreatedAt(Instant.now());
+        return event;
     }
 }

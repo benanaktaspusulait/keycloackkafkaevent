@@ -2,7 +2,11 @@ package com.smartface.keycloak.events.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "event_details")
 public class EventDetails extends PanacheEntity {

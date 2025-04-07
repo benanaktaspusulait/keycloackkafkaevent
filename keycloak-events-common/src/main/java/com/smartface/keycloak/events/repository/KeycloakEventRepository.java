@@ -7,13 +7,4 @@ import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class KeycloakEventRepository implements PanacheRepository<KeycloakEvent> {
-
-    @Transactional
-    public void save(KeycloakEvent event) {
-        persist(event);
-    }
-
-    public KeycloakEvent findById(String id) {
-        return find("id", id).firstResult();
-    }
 }

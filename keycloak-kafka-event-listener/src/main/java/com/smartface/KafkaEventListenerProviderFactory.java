@@ -17,28 +17,34 @@ import org.keycloak.models.KeycloakSessionFactory;
 @ApplicationScoped
 public class KafkaEventListenerProviderFactory implements EventListenerProviderFactory {
 
-    @Inject
-    KeycloakEventRepository eventRepository;
+    private final KeycloakEventRepository eventRepository;
+    private final EventDetailsRepository detailsRepository;
+    private final EventOutboxRepository outboxRepository;
 
     @Inject
-    EventDetailsRepository detailsRepository;
-
-    @Inject
-    EventOutboxRepository outboxRepository;
+    public KafkaEventListenerProviderFactory(
+            KeycloakEventRepository eventRepository,
+            EventDetailsRepository detailsRepository,
+            EventOutboxRepository outboxRepository
+    ) {
+        this.eventRepository = eventRepository;
+        this.detailsRepository = detailsRepository;
+        this.outboxRepository = outboxRepository;
+    }
 
     @Override
     public EventListenerProvider create(KeycloakSession session) {
         String bootstrapServers = System.getenv("KC_EVENTS_LISTENER_KAFKA_BOOTSTRAP_SERVERS");
         String topic = System.getenv("KC_EVENTS_LISTENER_KAFKA_TOPIC");
         String clientId = System.getenv("KC_EVENTS_LISTENER_KAFKA_CLIENT_ID");
-        
+
         return new KafkaEventListenerProvider(
-            bootstrapServers, 
-            topic, 
-            clientId,
-            eventRepository,
-            detailsRepository,
-            outboxRepository
+                bootstrapServers,
+                topic,
+                clientId,
+                eventRepository,
+                detailsRepository,
+                outboxRepository
         );
     }
 

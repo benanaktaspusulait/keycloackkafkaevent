@@ -2,10 +2,13 @@ package com.smartface.keycloak.events.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.Instant;
 
-@Data
+@Setter
+@Getter
 @Entity
 @Table(name = "event_outbox")
 public class EventOutbox extends PanacheEntity {

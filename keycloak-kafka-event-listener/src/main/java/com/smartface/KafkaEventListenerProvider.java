@@ -16,7 +16,6 @@ import org.keycloak.events.admin.AdminEvent;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.UUID;
 import java.util.logging.Logger;
 
 public class KafkaEventListenerProvider implements EventListenerProvider {

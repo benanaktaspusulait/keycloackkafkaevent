@@ -8,15 +8,19 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
-import java.time.Instant;
 import java.util.List;
 
 @ApplicationScoped
 public class EventServiceImpl implements EventService {
     private static final Logger LOG = Logger.getLogger(EventServiceImpl.class);
 
+
+    private final EventOutboxRepository eventOutboxRepository;
+
     @Inject
-    EventOutboxRepository eventOutboxRepository;
+    public EventServiceImpl(EventOutboxRepository eventOutboxRepository) {
+        this.eventOutboxRepository = eventOutboxRepository;
+    }
 
     @Override
     @Transactional
