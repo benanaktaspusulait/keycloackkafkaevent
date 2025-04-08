@@ -32,7 +32,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void testProcessEvent() {
+    void testSendEvent() {
         // Given
         String eventId = "test-event-id";
         String eventType = "USER_EVENT";
@@ -45,7 +45,7 @@ class EventServiceImplTest {
                 .setDetails(details)
                 .build();
         // When
-        eventService.processEvent(eventRequest);
+        eventService.sendEvent(eventRequest);
 
         // Then
         ArgumentCaptor<EventOutbox> eventCaptor = ArgumentCaptor.forClass(EventOutbox.class);

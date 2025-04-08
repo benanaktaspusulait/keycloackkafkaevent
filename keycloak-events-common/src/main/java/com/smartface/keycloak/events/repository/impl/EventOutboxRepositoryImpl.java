@@ -1,7 +1,8 @@
-package com.smartface.keycloak.events.repository;
+package com.smartface.keycloak.events.repository.impl;
 
 import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
+import com.smartface.keycloak.events.repository.EventOutboxRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;

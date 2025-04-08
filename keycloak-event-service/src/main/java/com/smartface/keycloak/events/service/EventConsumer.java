@@ -36,8 +36,7 @@ public class EventConsumer {
                     .setDetails(event.getDetails())
                     .build();
 
-            eventService.processEvent(eventRequest
-            );
+            eventService.sendEvent(eventRequest);
 
             logger.info(() -> String.format("Successfully processed event with ID: %s", event.getEventId()));
         } catch (Exception e) {

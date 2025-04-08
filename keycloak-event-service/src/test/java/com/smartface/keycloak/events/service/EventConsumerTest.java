@@ -1,5 +1,6 @@
 package com.smartface.keycloak.events.service;
 
+import com.smartface.keycloak.grpc.EventRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
 import jakarta.inject.Inject;
@@ -35,17 +36,14 @@ class EventConsumerTest {
 
         eventConsumer.consume(eventId, eventType, details);
 
-        Mockito.verify(eventService).processEvent(
-                Mockito.eq(eventId),
-                Mockito.eq(eventType),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.eq(details)
-        );
+
+        EventRequest eventRequest = EventRequest.newBuilder()
+                .setEventId(eventId)
+                .setEventType(eventType)
+                .setDetails(details)
+                .build();
+
+        Mockito.verify(eventService).sendEvent(eventRequest);
     }
 
     @Test
@@ -58,18 +56,15 @@ class EventConsumerTest {
             }
             """;
 
+        EventRequest eventRequest = EventRequest.newBuilder()
+                .setEventId(eventId)
+                .setEventType(eventType)
+                .setDetails(details)
+                .build();
+
         eventConsumer.consume(eventId, eventType, details);
 
-        Mockito.verify(eventService).processEvent(
-                Mockito.eq(eventId),
-                Mockito.eq(eventType),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.eq(details)
+        Mockito.verify(eventService).sendEvent(eventRequest
         );
     }
 }

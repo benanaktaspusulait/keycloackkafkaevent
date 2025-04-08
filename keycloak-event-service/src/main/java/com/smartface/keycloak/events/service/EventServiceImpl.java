@@ -26,7 +26,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public void processEvent(EventRequest eventRequest) {
+    public void sendEvent(EventRequest eventRequest) {
         String eventId = eventRequest.getEventId();
         LOG.infof("Processing event with ID: %s", eventId);
         

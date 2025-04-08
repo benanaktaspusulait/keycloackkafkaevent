@@ -7,7 +7,7 @@ import com.smartface.keycloak.grpc.EventRequest;
 import java.util.List;
 
 public interface EventService {
-    void processEvent(EventRequest eventRequest);
+    void sendEvent(EventRequest eventRequest);
     
     List<EventOutbox> findPendingEvents();
     

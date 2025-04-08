@@ -34,15 +34,9 @@ public class KafkaEventListenerProviderFactory implements EventListenerProviderF
 
     @Override
     public EventListenerProvider create(KeycloakSession session) {
-        String bootstrapServers = System.getenv("KC_EVENTS_LISTENER_KAFKA_BOOTSTRAP_SERVERS");
-        String topic = System.getenv("KC_EVENTS_LISTENER_KAFKA_TOPIC");
-        String clientId = System.getenv("KC_EVENTS_LISTENER_KAFKA_CLIENT_ID");
 
-        return new KafkaEventListenerProvider(
-                bootstrapServers,
-                topic,
-                clientId,
-                eventRepository,
+
+        return new KafkaEventListenerProvider(eventRepository,
                 detailsRepository,
                 outboxRepository
         );
