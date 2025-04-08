@@ -36,10 +36,10 @@ CREATE TABLE IF NOT EXISTS event_outbox (
 -- Create the event details table
 CREATE TABLE IF NOT EXISTS event_details (
     id BIGSERIAL PRIMARY KEY,
-    event_id VARCHAR(255) NOT NULL,
+    event_id BIGINT NOT NULL,
     key VARCHAR(255) NOT NULL,
     value TEXT,
-    CONSTRAINT fk_event_details_event FOREIGN KEY (event_id) REFERENCES keycloak_events(event_id) ON DELETE CASCADE
+    CONSTRAINT fk_event_details_event FOREIGN KEY (event_id) REFERENCES keycloak_events(id) ON DELETE CASCADE
 );
 
 -- Create indexes for better query performance
