@@ -21,8 +21,8 @@ public class EventOutboxRepositoryImpl implements EventOutboxRepository, Panache
     public void updateStatus(String eventId, EventStatus status, String error) {
         EventOutbox event = find("eventId", eventId).firstResult();
         if (event != null) {
-            event.status = status;
-            event.lastError = error;
+            event.setStatus( status);
+            event.setLastError(error);
             persist(event);
         }
     }

@@ -29,16 +29,16 @@ public class EventServiceImpl implements EventService {
         LOG.infof("Processing event with ID: %s", eventId);
         
         EventOutbox eventOutbox = new EventOutbox();
-        eventOutbox.eventId = eventId;
-        eventOutbox.eventType = eventType;
-        eventOutbox.realmId = realmId;
-        eventOutbox.clientId = clientId;
-        eventOutbox.userId = userId;
-        eventOutbox.sessionId = sessionId;
-        eventOutbox.ipAddress = ipAddress;
-        eventOutbox.error = error;
-        eventOutbox.details = details;
-        eventOutbox.status = EventStatus.PENDING;
+        eventOutbox.setEventId( eventId);
+        eventOutbox.setEventType(eventType);
+        eventOutbox.setRealmId (realmId);
+        eventOutbox.setClientId (clientId);
+        eventOutbox.setUserId ( userId);
+        eventOutbox.setSessionId (sessionId);
+        eventOutbox.setIpAddress (ipAddress);
+        eventOutbox.setError(error);
+        eventOutbox.setDetails ( details);
+        eventOutbox.setStatus(EventStatus.PENDING);
         
         eventOutboxRepository.persist(eventOutbox);
         LOG.infof("Event with ID %s has been processed and saved", eventId);

@@ -10,16 +10,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @QuarkusTest
-public class EventServiceImplTest {
+class EventServiceImplTest {
 
     @InjectMock
     EventOutboxRepository eventOutboxRepository;
@@ -47,22 +45,22 @@ public class EventServiceImplTest {
         verify(eventOutboxRepository).persist(eventCaptor.capture());
 
         EventOutbox capturedEvent = eventCaptor.getValue();
-        assertEquals(eventId, capturedEvent.eventId);
-        assertEquals(eventType, capturedEvent.eventType);
-        assertEquals(details, capturedEvent.details);
-        assertEquals(EventStatus.PENDING, capturedEvent.status);
+        assertEquals(eventId, capturedEvent.getEventId());
+        assertEquals(eventType, capturedEvent.getEventType());
+        assertEquals(details, capturedEvent.getDetails());
+        assertEquals(EventStatus.PENDING, capturedEvent.getStatus());
     }
 
     @Test
     void testFindPendingEvents() {
         // Given
         EventOutbox event1 = new EventOutbox();
-        event1.eventId = "event1";
-        event1.status = EventStatus.PENDING;
+        event1.setEventId ("event1");
+        event1.setStatus (EventStatus.PENDING);
 
         EventOutbox event2 = new EventOutbox();
-        event2.eventId = "event2";
-        event2.status = EventStatus.PENDING;
+        event2.setEventId ("event2");
+        event2.setStatus (EventStatus.PENDING);
 
         List<EventOutbox> pendingEvents = Arrays.asList(event1, event2);
         when(eventOutboxRepository.findPendingEvents()).thenReturn(pendingEvents);
@@ -72,8 +70,8 @@ public class EventServiceImplTest {
 
         // Then
         assertEquals(2, result.size());
-        assertEquals("event1", result.get(0).eventId);
-        assertEquals("event2", result.get(1).eventId);
+        assertEquals("event1", result.get(0).getEventId());
+        assertEquals("event2", result.get(1).getEventId());
         verify(eventOutboxRepository).findPendingEvents();
     }
 

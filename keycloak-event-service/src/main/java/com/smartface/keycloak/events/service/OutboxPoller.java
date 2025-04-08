@@ -32,16 +32,16 @@ public class OutboxPoller {
         for (EventOutbox event : pendingEvents) {
             try {
                 // Create a Kafka record with event ID as key and event details as value
-                Record<String, String> record = Record.of(event.eventId, event.details);
+                Record<String, String> record = Record.of(event.getEventId(), event.getDetails());
                 emitter.send(record);
 
                 // Update event status to PUBLISHED
-                eventOutboxRepository.updateStatus(event.eventId, EventStatus.PUBLISHED, null);
-                LOG.infof("Successfully published event: %s", event.eventId);
+                eventOutboxRepository.updateStatus(event.getEventId(), EventStatus.PUBLISHED, null);
+                LOG.infof("Successfully published event: %s", event.getEventId());
             } catch (Exception e) {
-                LOG.errorf("Error publishing event: %s - %s", event.eventId, e.getMessage());
+                LOG.errorf("Error publishing event: %s - %s", event.getEventId(), e.getMessage());
                 // Update event status to FAILED and increment retry count
-                eventOutboxRepository.updateStatus(event.eventId, EventStatus.FAILED, e.getMessage());
+                eventOutboxRepository.updateStatus(event.getEventId(), EventStatus.FAILED, e.getMessage());
             }
         }
 

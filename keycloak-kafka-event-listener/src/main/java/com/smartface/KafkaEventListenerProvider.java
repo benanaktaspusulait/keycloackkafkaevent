@@ -45,7 +45,7 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     }
 
     @Transactional
-    private void storeEventDetails(String eventId, Map<String, String> details) {
+    private void storeEventDetails(Long eventId, Map<String, String> details) {
         if (details == null || details.isEmpty()) {
             return;
         }
@@ -62,12 +62,12 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     @Transactional
     private void storeInOutbox(String eventId, String eventJson) {
         EventOutbox outbox = new EventOutbox();
-        outbox.eventId = eventId;
-        outbox.eventType = "EVENT";
-        outbox.details = eventJson;
-        outbox.status = EventStatus.PENDING;
-        outbox.retryCount = 0;
-        outbox.createdAt = Instant.now();
+        outbox.setEventId(eventId);
+        outbox.setEventType("EVENT");
+        outbox.setDetails(eventJson);
+        outbox.setStatus(EventStatus.PENDING);
+        outbox.setRetryCount(0);
+        outbox.setCreatedAt(Instant.now());
         outboxRepository.persist(outbox);
     }
 

@@ -40,14 +40,14 @@ public class OutboxPollerTest {
     void testPollOutboxWithPendingEvents() {
         // Given
         EventOutbox event1 = new EventOutbox();
-        event1.eventId = "event1";
-        event1.details = "{\"key\":\"value1\"}";
-        event1.status = EventStatus.PENDING;
+        event1.setEventId ("event1");
+        event1.setDetails ("{\"key\":\"value1\"}");
+        event1.setStatus (EventStatus.PENDING);
 
         EventOutbox event2 = new EventOutbox();
-        event2.eventId = "event2";
-        event2.details = "{\"key\":\"value2\"}";
-        event2.status = EventStatus.PENDING;
+        event2.setEventId ("event2");
+        event2.setDetails ("{\"key\":\"value2\"}");
+        event2.setStatus (EventStatus.PENDING);
 
         when(eventOutboxRepository.findPendingEvents()).thenReturn(Arrays.asList(event1, event2));
         when(emitter.<Record<String, String>>send(any())).thenReturn(null);
@@ -78,9 +78,9 @@ public class OutboxPollerTest {
     void testPollOutboxWithError() {
         // Given
         EventOutbox event = new EventOutbox();
-        event.eventId = "event1";
-        event.details = "{\"key\":\"value1\"}";
-        event.status = EventStatus.PENDING;
+        event.setEventId ("event1");
+        event.setDetails ( "{\"key\":\"value1\"}");
+        event.setStatus ( EventStatus.PENDING);
 
         when(eventOutboxRepository.findPendingEvents()).thenReturn(Collections.singletonList(event));
         when(emitter.<Record<String, String>>send(any())).thenThrow(new RuntimeException("Test error"));
