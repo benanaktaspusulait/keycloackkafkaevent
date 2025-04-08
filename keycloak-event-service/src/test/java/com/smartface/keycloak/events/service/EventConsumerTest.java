@@ -1,9 +1,8 @@
 package com.smartface.keycloak.events.service;
 
-import com.smartface.keycloak.events.entity.EventOutbox;
-import com.smartface.keycloak.events.entity.EventStatus;
-import io.quarkus.test.junit.mockito.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.mockito.InjectMock;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -16,8 +15,8 @@ class EventConsumerTest {
     @InjectMock
     EventService eventService;
 
-    @InjectMock
-    EventConsumer eventConsumer;
+    @Inject
+    EventConsumer eventConsumer; // Inject the EventConsumer
 
     @Test
     void testConsumeEvent() {
@@ -37,15 +36,15 @@ class EventConsumerTest {
         eventConsumer.consume(eventId, eventType, details);
 
         Mockito.verify(eventService).processEvent(
-            Mockito.eq(eventId),
-            Mockito.eq(eventType),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.eq(details)
+                Mockito.eq(eventId),
+                Mockito.eq(eventType),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.eq(details)
         );
     }
 
@@ -62,15 +61,15 @@ class EventConsumerTest {
         eventConsumer.consume(eventId, eventType, details);
 
         Mockito.verify(eventService).processEvent(
-            Mockito.eq(eventId),
-            Mockito.eq(eventType),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.isNull(),
-            Mockito.eq(details)
+                Mockito.eq(eventId),
+                Mockito.eq(eventType),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.isNull(),
+                Mockito.eq(details)
         );
     }
 }

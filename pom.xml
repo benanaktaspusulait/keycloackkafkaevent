@@ -27,8 +27,8 @@
 
     <modules>
         <module>keycloak-events-common</module>
-        <module>keycloak-event-service</module>
         <module>keycloak-kafka-event-listener</module>
+        <module>keycloak-event-service</module>
     </modules>
 
     <dependencyManagement>

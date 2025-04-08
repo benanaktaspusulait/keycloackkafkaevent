@@ -3,12 +3,12 @@ package com.smartface;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartface.keycloak.events.entity.EventDetails;
+import com.smartface.keycloak.events.entity.EventEntity;
 import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
-import com.smartface.keycloak.events.entity.KeycloakEvent;
 import com.smartface.keycloak.events.repository.EventDetailsRepository;
 import com.smartface.keycloak.events.repository.EventOutboxRepository;
-import com.smartface.keycloak.events.repository.KeycloakEventRepository;
+import com.smartface.keycloak.events.repository.EventRepository;
 import jakarta.transaction.Transactional;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
@@ -27,12 +27,12 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     private final String topic;
     private final String clientId;
     private final ObjectMapper objectMapper;
-    private final KeycloakEventRepository eventRepository;
+    private final EventRepository eventRepository;
     private final EventDetailsRepository detailsRepository;
     private final EventOutboxRepository outboxRepository;
 
     public KafkaEventListenerProvider(String bootstrapServers, String topic, String clientId,
-                                    KeycloakEventRepository eventRepository,
+                                      EventRepository eventRepository,
                                     EventDetailsRepository detailsRepository,
                                     EventOutboxRepository outboxRepository) {
         this.bootstrapServers = bootstrapServers;
@@ -45,7 +45,7 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     }
 
     @Transactional
-    private void storeEventDetails(Long eventId, Map<String, String> details) {
+    private void storeEventDetails(String eventId, Map<String, String> details) {
         if (details == null || details.isEmpty()) {
             return;
         }
@@ -74,7 +74,7 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     @Transactional
     private void processEvent(Event event) {
         try {
-            KeycloakEvent keycloakEvent = new KeycloakEvent();
+            EventEntity keycloakEvent = new EventEntity();
             keycloakEvent.setId(event.getId());
             keycloakEvent.setTime(Instant.ofEpochMilli(event.getTime() <= 0 ? System.currentTimeMillis() : event.getTime()));
             keycloakEvent.setType(event.getType().name());
@@ -106,7 +106,7 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     @Transactional
     private void processAdminEvent(AdminEvent adminEvent) {
         try {
-            KeycloakEvent keycloakEvent = new KeycloakEvent();
+            EventEntity keycloakEvent = new EventEntity();
             keycloakEvent.setId(adminEvent.getId());
             keycloakEvent.setTime(Instant.ofEpochMilli(adminEvent.getTime()));
             keycloakEvent.setType("ADMIN_" + adminEvent.getOperationType().name());

@@ -1,5 +1,6 @@
 package com.smartface.keycloak.events.service;
 
+import com.smartface.keycloak.events.entity.EventEntity;
 import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
 import com.smartface.keycloak.events.repository.EventOutboxRepository;
@@ -27,6 +28,10 @@ public class OutboxPollerTest {
     @InjectMock
     @Channel("events")
     Emitter<Record<String, String>> emitter;
+
+    @Inject
+    @Channel("outbox")
+    Emitter<EventEntity> outboxEmitter;
 
     @Inject
     OutboxPoller outboxPoller;

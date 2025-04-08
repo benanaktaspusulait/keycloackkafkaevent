@@ -11,7 +11,7 @@ import lombok.Setter;
 @Table(name = "event_details")
 public class EventDetails extends PanacheEntity {
     @Column(name = "event_id")
-    public Long eventId;
+    public String eventId;
 
     @Column(name = "detail_key")
     public String key;
@@ -21,5 +21,5 @@ public class EventDetails extends PanacheEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", referencedColumnName = "id", insertable = false, updatable = false)
-    public KeycloakEvent event;
+    public EventEntity event;
 } 

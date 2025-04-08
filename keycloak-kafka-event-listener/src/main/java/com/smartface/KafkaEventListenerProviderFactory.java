@@ -2,7 +2,7 @@ package com.smartface;
 
 import com.smartface.keycloak.events.repository.EventDetailsRepository;
 import com.smartface.keycloak.events.repository.EventOutboxRepository;
-import com.smartface.keycloak.events.repository.KeycloakEventRepository;
+import com.smartface.keycloak.events.repository.EventRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.keycloak.Config;
@@ -17,13 +17,13 @@ import org.keycloak.models.KeycloakSessionFactory;
 @ApplicationScoped
 public class KafkaEventListenerProviderFactory implements EventListenerProviderFactory {
 
-    private final KeycloakEventRepository eventRepository;
+    private final EventRepository eventRepository;
     private final EventDetailsRepository detailsRepository;
     private final EventOutboxRepository outboxRepository;
 
     @Inject
     public KafkaEventListenerProviderFactory(
-            KeycloakEventRepository eventRepository,
+            EventRepository eventRepository,
             EventDetailsRepository detailsRepository,
             EventOutboxRepository outboxRepository
     ) {
