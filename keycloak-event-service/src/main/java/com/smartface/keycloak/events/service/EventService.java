@@ -2,11 +2,12 @@ package com.smartface.keycloak.events.service;
 
 import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
+import com.smartface.keycloak.grpc.EventRequest;
+
 import java.util.List;
 
 public interface EventService {
-    void processEvent(String eventId, String eventType, String realmId, String clientId, 
-                     String userId, String sessionId, String ipAddress, String error, String details);
+    void processEvent(EventRequest eventRequest);
     
     List<EventOutbox> findPendingEvents();
     

@@ -3,6 +3,7 @@ package com.smartface.keycloak.events.service;
 import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
 import com.smartface.keycloak.events.repository.EventOutboxRepository;
+import com.smartface.keycloak.grpc.EventRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
 import jakarta.inject.Inject;
@@ -37,8 +38,14 @@ class EventServiceImplTest {
         String eventType = "USER_EVENT";
         String details = "{\"key\":\"value\"}";
 
+
+        EventRequest eventRequest = EventRequest.newBuilder()
+                .setEventId(eventId)
+                .setEventType(eventType)
+                .setDetails(details)
+                .build();
         // When
-        eventService.processEvent(eventId, eventType, null, null, null, null, null, null, details);
+        eventService.processEvent(eventRequest);
 
         // Then
         ArgumentCaptor<EventOutbox> eventCaptor = ArgumentCaptor.forClass(EventOutbox.class);

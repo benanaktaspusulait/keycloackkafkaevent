@@ -2,6 +2,7 @@ package com.smartface.keycloak.events.service;
 
 import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
+import com.smartface.keycloak.grpc.EventRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -22,38 +23,45 @@ public class EventConsumer {
 
     @Transactional
     public void consume(String eventId, String eventType, String details) {
-        logger.info("Consuming event with ID: " + eventId);
+        logger.info(() -> String.format("Consuming event with ID: %s, type: %s", eventId, eventType));
 
         EventOutbox event = createEventOutbox(eventId, eventType, details);
 
         try {
-            logger.info("Processing event with ID: " + event.getEventId() + ", type: " + event.getEventType());
-            eventService.processEvent(
-                    event.getEventId(),
-                    event.getEventType(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    event.getDetails()
+            logger.info(() -> String.format("Processing event with ID: %s, type: %s", event.getEventId(), event.getEventType()));
+
+            EventRequest eventRequest = EventRequest.newBuilder()
+                        .setEventId(eventId)
+                        .setEventType(eventType)
+                    .setDetails(event.getDetails())
+                    .build();
+
+            eventService.processEvent(eventRequest
             );
-            logger.info("Successfully processed event with ID: " + event.getEventId());
+
+            logger.info(() -> String.format("Successfully processed event with ID: %s", event.getEventId()));
         } catch (Exception e) {
-            logger.severe("Error processing event with ID: " + event.getEventId() + ": " + e.getMessage());
-            throw e;
+            String errorMessage = String.format("Error processing event with ID: %s, type: %s", event.getEventId(), event.getEventType());
+            logger.severe(() -> errorMessage + ": " + e.getMessage());
+
+            // Update event status to failed
+            event.setStatus(EventStatus.FAILED);
+            event.setLastError(e.getMessage());
+
+            // Rethrow with contextual information
+            throw new EventProcessingException(errorMessage, e);
         }
     }
 
     private EventOutbox createEventOutbox(String eventId, String eventType, String details) {
         EventOutbox event = new EventOutbox();
         event.setEventId(eventId);
-        event.setEventType( eventType);
+        event.setEventType(eventType);
         event.setDetails(details);
-        event.setStatus( EventStatus.PENDING);
+        event.setStatus(EventStatus.PENDING);
         event.setRetryCount(0);
         event.setCreatedAt(Instant.now());
         return event;
     }
+
 }

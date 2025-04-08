@@ -3,12 +3,14 @@ package com.smartface.keycloak.events.service;
 import com.smartface.keycloak.events.entity.EventOutbox;
 import com.smartface.keycloak.events.entity.EventStatus;
 import com.smartface.keycloak.events.repository.EventOutboxRepository;
+import com.smartface.keycloak.grpc.EventRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.util.List;
+import java.util.UUID;
 
 @ApplicationScoped
 public class EventServiceImpl implements EventService {
@@ -24,20 +26,20 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public void processEvent(String eventId, String eventType, String realmId, String clientId, 
-                           String userId, String sessionId, String ipAddress, String error, String details) {
+    public void processEvent(EventRequest eventRequest) {
+        String eventId = eventRequest.getEventId();
         LOG.infof("Processing event with ID: %s", eventId);
         
         EventOutbox eventOutbox = new EventOutbox();
-        eventOutbox.setEventId( eventId);
-        eventOutbox.setEventType(eventType);
-        eventOutbox.setRealmId (realmId);
-        eventOutbox.setClientId (clientId);
-        eventOutbox.setUserId ( userId);
-        eventOutbox.setSessionId (sessionId);
-        eventOutbox.setIpAddress (ipAddress);
-        eventOutbox.setError(error);
-        eventOutbox.setDetails ( details);
+        eventOutbox.setEventId( eventId );
+        eventOutbox.setEventType(eventRequest.getEventType());
+        eventOutbox.setRealmId (eventRequest.getRealmId());
+        eventOutbox.setClientId (eventRequest.getClientId());
+        eventOutbox.setUserId ( eventRequest.getUserId());
+        eventOutbox.setSessionId (eventRequest.getSessionId());
+        eventOutbox.setIpAddress (eventRequest.getIpAddress());
+        eventOutbox.setError(eventRequest.getError());
+        eventOutbox.setDetails (eventOutbox.getDetails());
         eventOutbox.setStatus(EventStatus.PENDING);
         
         eventOutboxRepository.persist(eventOutbox);
